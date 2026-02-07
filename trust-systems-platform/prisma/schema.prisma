@@ -36,6 +36,13 @@ model User {
   userFlashcards UserFlashcard[]
   flashcardSettings FlashcardSettings?
   progressEvents ProgressEvent[]
+
+  // C++ Modules
+  userCppExercises   UserCppExercise[]
+  userCppSkills      UserCppSkill[]
+  userCppFlashcards  UserCppFlashcard[]
+  peerEvaluationsGiven    PeerEvaluation[] @relation("evaluator")
+  peerEvaluationsReceived PeerEvaluation[] @relation("evaluated")
 }
 
 model Session {
@@ -405,4 +412,148 @@ model ProgressEvent {
 
   @@index([userId, createdAt])
   @@index([type, createdAt])
+}
+
+// ── C++ Modules Learning Path ────────────────────────────────
+
+model CppModule {
+  id          String @id @default(cuid())
+  number      Int    @unique        // 5, 6, 7, 8, 9
+  title       String               // "Repetition and Exceptions"
+  slug        String @unique        // "cpp05"
+  description String
+  order       Int
+
+  exercises  CppExercise[]
+}
+
+model CppExercise {
+  id                String @id @default(cuid())
+  moduleId          String
+  number            Int                  // 0, 1, 2, 3
+  slug              String @unique       // "cpp05-ex00"
+  title             String               // "Bureaucrat"
+  description       String
+  difficulty        String @default("medium") // easy, medium, hard
+  estimatedHours    Int    @default(4)
+  filesRequired     String @default("[]")     // JSON: ["Makefile","main.cpp","Bureaucrat.hpp","Bureaucrat.cpp"]
+  skillsSummary     String @default("")       // brief list of skills exercised
+  markdownContent   String @default("")       // full lesson markdown
+  order             Int
+
+  module            CppModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  userProgress      UserCppExercise[]
+  peerEvaluations   PeerEvaluation[]
+
+  @@unique([moduleId, number])
+}
+
+model UserCppExercise {
+  id            String    @id @default(cuid())
+  userId        String
+  exerciseId    String
+  status        String    @default("not_started") // not_started, in_progress, completed, defended
+  startedAt     DateTime?
+  completedAt   DateTime?
+  defenseDate   DateTime?
+  defenseScore  Int?      // 0-100
+  gitRepoLink   String?
+  notes         String?   // student notes
+  updatedAt     DateTime  @default(now())
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise      CppExercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exerciseId])
+}
+
+model CppSkill {
+  id            String @id @default(cuid())
+  slug          String @unique              // "exception-hierarchies"
+  title         String                      // "Exception Hierarchies"
+  description   String
+  category      String                      // "exception", "cast", "template", "stl", "advanced-stl"
+  moduleNumber  Int                         // 5-9
+  unlockExercise String?                    // "cpp05-ex00" — exercise slug that unlocks this
+  careerValue   String @default("")         // why this matters for career
+  proofCriteria String @default("[]")       // JSON: mastery proof criteria
+
+  userCppSkills UserCppSkill[]
+}
+
+model UserCppSkill {
+  id            String    @id @default(cuid())
+  userId        String
+  skillId       String
+  level         String    @default("locked") // locked, unlocked, bronze, silver, gold, platinum
+  timesUsed     Int       @default(0)
+  firstUsedAt   DateTime?
+  updatedAt     DateTime  @default(now())
+
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill         CppSkill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+}
+
+model CppFlashcard {
+  id            String @id @default(cuid())
+  moduleNumber  Int                        // 5-9
+  cardType      String @default("concept") // concept, code, debug, decision, gotcha, comparison
+  front         String                     // question / prompt (markdown)
+  back          String                     // answer (markdown)
+  difficulty    String @default("medium")  // easy, medium, hard
+  exerciseSlug  String?                    // linked exercise e.g. "cpp05-ex00"
+
+  userCards     UserCppFlashcard[]
+}
+
+model UserCppFlashcard {
+  id              String    @id @default(cuid())
+  userId          String
+  cardId          String
+  easeFactor      Float     @default(2.5)
+  intervalDays    Float     @default(0)
+  repetitions     Int       @default(0)
+  dueAt           DateTime  @default(now())
+  lastReviewedAt  DateTime?
+  lapseCount      Int       @default(0)
+  suspended       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now())
+
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card            CppFlashcard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  reviews         CppFlashcardReview[]
+
+  @@unique([userId, cardId])
+}
+
+model CppFlashcardReview {
+  id               String   @id @default(cuid())
+  userFlashcardId  String
+  grade            Int      // 0=Again, 1=Hard, 2=Good, 3=Easy
+  prevInterval     Float
+  newInterval      Float
+  prevEase         Float
+  newEase          Float
+  responseMs       Int?
+  reviewedAt       DateTime @default(now())
+
+  userFlashcard    UserCppFlashcard @relation(fields: [userFlashcardId], references: [id], onDelete: Cascade)
+}
+
+model PeerEvaluation {
+  id              String   @id @default(cuid())
+  evaluatorId     String
+  evaluatedUserId String
+  exerciseId      String
+  score           Int      // 0-100
+  feedback        String?
+  evaluatedAt     DateTime @default(now())
+
+  evaluator       User        @relation("evaluator", fields: [evaluatorId], references: [id], onDelete: Cascade)
+  evaluatedUser   User        @relation("evaluated", fields: [evaluatedUserId], references: [id], onDelete: Cascade)
+  exercise        CppExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 }
