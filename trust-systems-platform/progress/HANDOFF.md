@@ -30,11 +30,12 @@
 - Review scheduling uses lesson metadata when present (`reviewScheduleDays`) else defaults `[1,3,7,14]`.
 - Progress page includes streak, recent activity, and next recommended lesson.
 - Quick-review workflow includes `Mark Reviewed` action and prompts.
-- Part 1 lessons + quest rewritten in simple English with explicit tasks.
+- Part 1 lessons + quest rewritten in simple English.
+- Week 2 (Days 8-13) rewritten to Day 1 quality format.
 
 ## What Is Unfinished
 - Migration SQL was added but not executed in this environment.
-- Content DB needs re-sync after Part 1 rewrite and visual mapping integration.
+- Content DB needs re-sync after Week 2 rewrite.
 - Full runtime QA (manual app walkthrough + `npm test`) is pending because Node.js is not available in this terminal.
 
 ## How To Run Locally

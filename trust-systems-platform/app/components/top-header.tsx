@@ -25,6 +25,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/", matchPrefix: "/" },
   { label: "Courses", href: "/parts", matchPrefix: "/parts" },
+  { label: "Skill Tree", href: "/skill-tree", matchPrefix: "/skill-tree" },
+  { label: "Flashcards", href: "/flashcards", matchPrefix: "/flashcards" },
   { label: "Training", href: "/reviews", matchPrefix: "/reviews" },
   { label: "Community", href: "/community", matchPrefix: "/community" },
   { label: "Leaderboard", href: "/leaderboard", matchPrefix: "/leaderboard" },

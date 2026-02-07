@@ -8,7 +8,7 @@ prereqs: []
 proof:
   type: "paste_or_upload"
   status: "manual_or_regex"
-review_schedule_days: [3,7,21,60]
+review_schedule_days: [3, 7, 21, 60]
 ---
 
 # Anchoring Workflow

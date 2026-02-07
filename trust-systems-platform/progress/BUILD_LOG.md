@@ -293,3 +293,19 @@
   - file edits via patch
 - Next step:
   - Re-run `npm run dev` and refresh lesson pages to verify Rules/Practice buttons work.
+
+## Entry
+- UTC timestamp: 2026-02-07T10:41:08Z
+- What changed:
+  - Rewrote Week 2 (Days 8-13) lessons and quest to the full Day 1 quality format: WHAT/WHY/WARMUP/WORK/PROVE/SHIP with explicit files, templates, examples, and stable exit code rules.
+- Files created/modified:
+  - `content/trust_platform_content/parts/w02-tcp-echo-server-with-stream-safe-framing/lessons/01-quest-tcp-lifecycle-spec-2h.md`
+  - `content/trust_platform_content/parts/w02-tcp-echo-server-with-stream-safe-framing/lessons/02-quest-partial-io-mastery-2h.md`
+  - `content/trust_platform_content/parts/w02-tcp-echo-server-with-stream-safe-framing/lessons/03-quest-frame-parser-2h.md`
+  - `content/trust_platform_content/parts/w02-tcp-echo-server-with-stream-safe-framing/lessons/04-quest-timeout-policy-2h.md`
+  - `content/trust_platform_content/parts/w02-tcp-echo-server-with-stream-safe-framing/lessons/05-quest-client-retry-rules-2h.md`
+  - `content/trust_platform_content/parts/w02-tcp-echo-server-with-stream-safe-framing/quest.md`
+- Commands run:
+  - file edits via shell heredoc
+- Next step:
+  - Re-run `npm run content:sync` locally to load new Week 2 content.

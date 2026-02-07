@@ -33,6 +33,8 @@ model User {
   userSkills     UserSkill[]
   skillContexts  SkillContext[]
   skillAttempts  SkillAttempt[]
+  userFlashcards UserFlashcard[]
+  flashcardSettings FlashcardSettings?
 }
 
 model Session {
@@ -323,4 +325,68 @@ model SkillAttempt {
 
   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   skill Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+}
+
+// ── Flashcards + Spaced Repetition (SM-2) ────────────────────
+
+model Flashcard {
+  id          String   @id @default(cuid())
+  front       String   // question / prompt (supports markdown)
+  back        String   // answer (supports markdown)
+  type        String   @default("concept") // concept | code | debug | decision | interview | comparison | gotcha | mental_model
+  hint        String?  // optional "Why you missed" explanation for debug/gotcha
+  tags        String   @default("{}") // JSON: { week?, part?, skill_id?, lesson_id? }
+  sourceRef   String?  // e.g. "w03-d01" or lesson slug
+  artifactRef String?  // optional project/artifact reference
+  createdAt   DateTime @default(now())
+
+  userCards   UserFlashcard[]
+}
+
+model UserFlashcard {
+  id              String    @id @default(cuid())
+  userId          String
+  cardId          String
+  easeFactor      Float     @default(2.5)  // SM-2 ease factor (min 1.3)
+  intervalDays    Float     @default(0)    // current interval in days
+  repetitions     Int       @default(0)    // consecutive correct reps
+  dueAt           DateTime  @default(now())
+  lastReviewedAt  DateTime?
+  lapseCount      Int       @default(0)    // total times "Again" pressed
+  suspended       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now())
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Flashcard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  reviews FlashcardReview[]
+
+  @@unique([userId, cardId])
+}
+
+model FlashcardReview {
+  id             String   @id @default(cuid())
+  userFlashcardId String
+  grade          Int      // 0=Again, 1=Hard, 2=Good, 3=Easy
+  prevInterval   Float
+  newInterval    Float
+  prevEase       Float
+  newEase        Float
+  responseMs     Int?     // time to answer in milliseconds
+  reviewedAt     DateTime @default(now())
+
+  userFlashcard UserFlashcard @relation(fields: [userFlashcardId], references: [id], onDelete: Cascade)
+}
+
+model FlashcardSettings {
+  id             String @id @default(cuid())
+  userId         String @unique
+  newCardsPerDay Int    @default(20)
+  maxReviewsPerDay Int  @default(200)
+  againStepMinutes Int  @default(10)   // retry step for "Again" (minutes)
+  hardMultiplier Float  @default(1.2)  // interval multiplier for "Hard"
+  easyBonus      Float  @default(1.3)  // extra multiplier for "Easy"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -1,7 +1,7 @@
 ---
 id: w02-tcp-echo-server-with-stream-safe-framing-quest
 part: w02-tcp-echo-server-with-stream-safe-framing
-title: "BOSS FIGHT: Integrate & Measure  4h"
+title: "BOSS FIGHT: Echo Server Demo  4h"
 order: 6
 duration_minutes: 240
 prereqs: ["w02-tcp-echo-server-with-stream-safe-framing-d05-quest-client-retry-rules-2h"]
@@ -10,51 +10,151 @@ proof:
   status: "manual_or_regex"
 ---
 
-# BOSS FIGHT: Integrate & Measure  4h
++--------------------------------------------------------------+
+| DAY 13: BOSS FIGHT - ECHO SERVER DEMO                        |
++--------------------------------------------------------------+
 
 ## Visual Model
 
 ![Visual Model](/visuals/w02-tcp-echo-server-with-stream-safe-framing.svg)
 
+## Goal
+Ship a working single-client TCP echo demo with proof logs.
 
+## WHAT YOU'RE BUILDING TODAY
 
-## Objective
-Integrate the week’s lessons into a single working demo.
+A runnable echo server demo and a short baseline report.
 
-## Required constraint
-- **Integrate everything from this week; prove it under load/failure.**
+By end of this session, you will have:
+- File: `week-2/day6-echo-demo.md`
+- File: `week-2/day6-baseline-report.md`
+- 1 working demo run log
+- 1 forced failure log (port in use)
+- 1 timing or count baseline
 
-## Prove it
-Attach evidence for: `week-2/day6-echo-baseline-report.md`  
-Minimum evidence:
-- a short run log (start → work → stop)
-- one induced failure + the system’s response
-- a quick metric or timing baseline
+What "done" looks like:
 
-## Notes from the original roadmap
-### 📖 Learn (40 min)
-**Reuse and integration discipline**
+```markdown
+Demo log:
+- Server started on 8080
+- Client sent "hello"
+- Server echoed "hello"
+```
 
-Key takeaways:
-1. Shared logger reuse
-2. Structured network logs
-3. Baseline throughput measures
+You can:
+- Start the server and echo one message.
+- Show logs for success and failure.
 
-### 🔨 Do (180 min)
-Integrate logger from Week 1 into TCP tools and run echo workload plan.
+You cannot yet:
+- Handle multiple clients (Week 3).
 
-> 🆕 **New constraint:** Each request must carry a traceable request ID in logs.
+## WHY THIS MATTERS
 
-### ✅ Prove (40 min)
-Capture latency and success-rate baseline from 3 payload sizes.
+Without a demo, specs are only words.
+You need proof that the rules work in real runs.
 
-### 📦 Ship
-`week-2/day6-echo-baseline-report.md`
+With this demo, you can trust your Week 2 work.
+It is the base for multi-client in Week 3.
 
-### 💡 Why This Matters
-This day proves composition, not restart-from-zero. Measured baselines make future optimizations meaningful. It unlocks multi-client event-loop comparison next week.
+How this connects:
+- Day 8 to Day 12 define the rules you must follow.
+- Week 3 will reuse your echo loop and error handling.
+- Week 4 HTTP client uses the same read/write logic.
 
-### 🧠 Self-Check
-- [ ] What was reused?
-- [ ] What baseline numbers matter?
-- [ ] Why attach request IDs now?
+Mental model:
+"Proof over claims" = show logs, not just statements.
+
+## WARMUP (8 min)
+
+Step 1 (3 min): Review your spec
+- Do: Read `week-2/day1-tcp-lifecycle-spec.md`.
+- Why: The demo must match the spec.
+
+Step 2 (3 min): Review timeout and retry rules
+- Do: Scan Day 11 and Day 12 docs.
+- Why: Demo must respect them.
+
+Step 3 (2 min): Mental model
+- Think: "A demo is a tiny production run."
+- Answer: It must be clean and repeatable.
+- Why: Repeatable runs prove quality.
+
+## WORK (180 min total)
+
+### SET 1 (60 min): Run a clean demo
+
+Build: `week-2/day6-echo-demo.md`
+
+Do:
+1. Start server on port 8080.
+2. Connect one client and send one message.
+3. Capture stdout and stderr output.
+
+Done when:
+- Demo log shows server start and echo.
+
+Proof:
+- Paste the demo log.
+
+### SET 2 (60 min): Force a failure
+
+Build: `week-2/day6-echo-demo.md`
+
+Do:
+1. Start a server on port 8080.
+2. Try to start a second server on the same port.
+3. Capture stderr and exit code 2.
+
+Done when:
+- Failure log shows port in use and exit code 2.
+
+Proof:
+- Paste the failure log.
+
+### SET 3 (60 min): Baseline report
+
+Build: `week-2/day6-baseline-report.md`
+
+Do:
+1. Run 5 echo requests.
+2. Record total time or per-request time.
+3. Save the numbers in a small table.
+
+Done when:
+- Baseline table exists with 5 rows.
+
+Proof:
+- Paste the baseline table.
+
+## PROVE (20 min)
+
+Checklist:
+- Demo log exists.
+- Failure log exists.
+- Baseline table exists.
+
+Self-test:
+1) What exit code for port in use? Answer: 2.
+2) Where do errors go? Answer: stderr.
+3) What is stdout for? Answer: main output.
+
+Commands:
+- `grep -c "Server" week-2/day6-echo-demo.md`
+  Expected: at least 2
+
+## SHIP (5 min)
+
+Artifacts:
+- `week-2/day6-echo-demo.md`
+- `week-2/day6-baseline-report.md`
+
+Git:
+```bash
+git add week-2/day6-echo-demo.md week-2/day6-baseline-report.md
+git commit -m "Day 13: echo server demo and baseline"
+```
+
+Quality check:
+- Logs show stdout vs stderr clearly.
+- Exit codes are 0/1/2 only.
+- Baseline table has 5 rows.

@@ -11,39 +11,147 @@ proof:
 review_schedule_days: [1,3,7,14]
 ---
 
-# Quest: Timeout Policy  2h
++--------------------------------------------------------------+
+| DAY 11: TIMEOUT POLICY                                       |
++--------------------------------------------------------------+
 
 ## Visual Model
 
 ![Visual Model](/visuals/w02-tcp-echo-server-with-stream-safe-framing.svg)
 
+## Goal
+Define clear timeout rules for connect, read, and write.
 
+## WHAT YOU'RE BUILDING TODAY
 
-## Lesson Content
-### 📖 Learn (30 min)
-**Timeouts and dead peers**
+A timeout policy that stops stuck sockets safely.
 
-Key takeaways:
-1. Read timeout
-2. Heartbeat (optional)
-3. Idle connection cleanup
+By end of this session, you will have:
+- File: `week-2/day4-timeout-policy.md`
+- 3 timeout values (connect, read, write)
+- 6 rules for what to do on timeout
+- 6 tests for timeout behavior
 
-### 🔨 Do (80 min)
-Define idle and read timeout policy for client/server.
+What "done" looks like:
 
-> 🆕 **New constraint:** Connection closes after idle threshold with explicit reason.
+```markdown
+Read timeout: 5s
+If read times out -> log to stderr, close socket, exit 2
+```
 
-### ✅ Prove (20 min)
-Design slow-client timeout scenario and expected log output.
+You can:
+- Explain what to do on timeout.
+- Set stable timeout values.
 
-### 📦 Ship
-`week-2/day4-timeout-policy.md`
+You cannot yet:
+- Handle retries (Day 12).
 
-### 💡 Why This Matters
-Timeouts protect resource usage and keep services responsive. This prevents dead connections from draining capacity. It unlocks backpressure policy in Month 2.
+## WHY THIS MATTERS
 
-### 🧠 Self-Check
-- [ ] Why are timeouts mandatory in servers?
-- [ ] What is idle vs read timeout?
-- [ ] How should timeout appear in logs?
+Without timeouts, your server can hang forever.
+That blocks tests and wastes time.
 
+With timeouts, your server fails fast and predictable.
+This is required for Week 6 overload control.
+
+How this connects:
+- Day 10 parser uses read timeouts to avoid dead waits.
+- Day 12 retry rules depend on timeout outcomes.
+- Week 6 uses timeouts for overload handling.
+
+Mental model:
+"Timeout" = stop waiting, take a clear action.
+
+## WARMUP (7 min)
+
+Step 1 (2 min): Review frame size limit
+- Do: Read your max size rule from Day 10.
+- Why: Timeouts protect the parser too.
+
+Step 2 (3 min): Pick values
+- Do: Write 3 numbers: connect=2s, read=5s, write=5s.
+- Why: You need fixed numbers for tests.
+
+Step 3 (2 min): Mental model
+- Think: "Timeout is a guardrail."
+- Answer: It stops infinite waiting.
+- Why: It keeps systems responsive.
+
+## WORK (80 min total)
+
+### SET 1 (25 min): Timeout values
+
+Build: `week-2/day4-timeout-policy.md`
+
+Do:
+1. Define connect timeout.
+2. Define read timeout.
+3. Define write timeout.
+
+Done when:
+- Three values are listed with units.
+
+Proof:
+- Paste the values section.
+
+### SET 2 (25 min): Actions on timeout
+
+Build: `week-2/day4-timeout-policy.md`
+
+Do:
+1. Write 6 rules for timeout handling.
+2. Include: log to stderr, close socket, exit 2.
+3. State any retry is not done yet.
+
+Done when:
+- 6 rules are written.
+
+Proof:
+- Paste the rules.
+
+### SET 3 (30 min): Timeout tests
+
+Build: `week-2/day4-timeout-policy.md`
+
+Do:
+1. Create 6 test cases (2 per timeout type).
+2. For each: trigger, expected stderr, exit code.
+3. Mark timeout tests as exit 2.
+
+Done when:
+- Test table has 6 rows.
+
+Proof:
+- Paste the test table.
+
+## PROVE (20 min)
+
+Checklist:
+- 3 timeout values exist.
+- 6 rules exist.
+- 6 tests exist.
+
+Self-test:
+1) What exit code on timeout? Answer: 2.
+2) Where do timeout errors go? Answer: stderr.
+3) Why do we need timeouts? Answer: avoid hangs.
+
+Commands:
+- `grep -c "timeout" week-2/day4-timeout-policy.md`
+  Expected: at least 6
+
+## SHIP (5 min)
+
+Artifacts:
+- `week-2/day4-timeout-policy.md`
+
+Git:
+```bash
+git add week-2/day4-timeout-policy.md
+git commit -m "Day 11: timeout policy and tests"
+```
+
+Quality check:
+- All timeouts have numbers and units.
+- Exit codes are 0/1/2 only.
+- Errors are in stderr.

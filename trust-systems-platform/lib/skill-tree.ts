@@ -10,7 +10,46 @@ export interface SkillDefinition {
   category: "cli" | "network" | "crypto" | "wal" | "consensus" | "safety";
   spineOrder: number; // 1-25
   xpPerUse: number;
+  prerequisites?: string[]; // slugs of skills required before this one
 }
+
+/**
+ * Skill Tree prerequisites (edges)
+ * Maps skill slug to array of prerequisite skill slugs
+ */
+export const SKILL_PREREQUISITES: Record<string, string[]> = {
+  // CLI skills
+  "trace-write-path": ["write-cli-contract"],
+  "define-validation-boundaries": ["trace-write-path"],
+  "name-every-failure": ["define-validation-boundaries"],
+  "test-from-spec": ["name-every-failure"],
+
+  // Network skills
+  "handle-nonblocking": ["implement-sockets"],
+  "frame-messages": ["handle-nonblocking"],
+  "handle-backpressure": ["frame-messages"],
+  "echo-protocol": ["handle-backpressure"],
+
+  // Crypto: integrity chain
+  "verify-integrity": ["compute-hashes"],
+  "merkle-tree-proofs": ["verify-integrity"],
+
+  // Crypto: signatures chain
+  "verify-signatures": ["sign-messages"],
+  "prevent-replay": ["verify-signatures"],
+
+  // WAL: durability chain
+  "crash-recovery": ["wal-write-path"],
+  "fsync-discipline": ["crash-recovery"],
+
+  // Consensus: foundation
+  "leader-election": ["heartbeat-protocol"],
+  "quorum-protocol": ["leader-election"],
+
+  // Safety: transparency
+  "log-anchoring": ["append-only-log"],
+  "observability": ["append-only-log"],
+};
 
 export const CORE_SKILLS: SkillDefinition[] = [
   // Week 1: CLI & Logger Discipline (5 skills)

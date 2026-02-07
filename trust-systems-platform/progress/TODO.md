@@ -25,4 +25,5 @@
 - [x] Replace Visual Model placeholders with real images
 - [x] Integrate visual mapping pack + hero visuals + attribution
 - [x] Rewrite Part 1 lessons and quest in simple English
+- [x] Rewrite Week 2 (Days 8-13) to Day 1 quality
 - [ ] Final QA walkthrough and finalize HANDOFF snapshot
