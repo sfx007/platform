@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { logProgressEvent } from "@/lib/progress-events";
 import { schedule, type Grade, type CardState, type SchedulerConfig } from "@/lib/flashcard-scheduler";
 
 export async function POST(request: Request) {
@@ -85,6 +86,13 @@ export async function POST(request: Request) {
         lastReviewedAt: now,
         updatedAt: now,
       },
+    });
+
+    // Log progress event
+    await logProgressEvent(user.id, "card_reviewed", {
+      cardId: userCardId,
+      grade,
+      newInterval: result.newInterval,
     });
 
     return NextResponse.json({

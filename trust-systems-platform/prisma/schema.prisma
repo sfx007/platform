@@ -35,6 +35,7 @@ model User {
   skillAttempts  SkillAttempt[]
   userFlashcards UserFlashcard[]
   flashcardSettings FlashcardSettings?
+  progressEvents ProgressEvent[]
 }
 
 model Session {
@@ -389,4 +390,19 @@ model FlashcardSettings {
   easyBonus      Float  @default(1.3)  // extra multiplier for "Easy"
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Progress Event Log ───────────────────────────────────────
+
+model ProgressEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String   // proof_submitted | skill_up | achievement_unlocked | card_reviewed | lesson_completed | quest_completed
+  payload    String   @default("{}") // JSON blob with event-specific data
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
 }

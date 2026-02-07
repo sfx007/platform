@@ -4,6 +4,7 @@ import { SplitLayout } from "./split-layout";
 import { LessonContentPanel } from "./lesson-content-panel";
 import { CodeEditorPanel } from "./code-editor-panel";
 import type { StarterFiles } from "@/lib/starter-code";
+import type { VisualData } from "@/app/components/lesson/visual-model-card";
 
 interface LessonSplitViewProps {
   lessonId: string;
@@ -20,6 +21,7 @@ interface LessonSplitViewProps {
   passed: boolean;
   contentHtml: string;
   starter: StarterFiles;
+  heroVisual?: VisualData | null;
   mode: "lesson" | "quest";
 }
 
@@ -40,6 +42,7 @@ export function LessonSplitView(props: LessonSplitViewProps) {
           proofInstructions={props.proofInstructions}
           contentHtml={props.contentHtml}
           lessonId={props.lessonId}
+          heroVisual={props.heroVisual}
         />
       }
       rightPanel={

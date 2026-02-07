@@ -1,6 +1,7 @@
 "use client";
 
 import { TrainingSessionCard } from "./training-session-card";
+import { VisualModelCard, type VisualData } from "./visual-model-card";
 import { InteractiveContent } from "./interactive-content";
 
 interface LessonContentPanelProps {
@@ -28,6 +29,8 @@ interface LessonContentPanelProps {
   contentHtml: string;
   /** Unique lesson identifier for persisting checkbox state */
   lessonId?: string;
+  /** Hero visual data for the lesson */
+  heroVisual?: VisualData | null;
 }
 
 export function LessonContentPanel({
@@ -43,9 +46,10 @@ export function LessonContentPanel({
   proofInstructions,
   contentHtml,
   lessonId,
+  heroVisual,
 }: LessonContentPanelProps) {
   return (
-    <div className="flex flex-col" style={{ gap: '32px' }}>
+    <div className="flex flex-col" style={{ gap: '20px' }}>
       {/* ===== Lesson title ===== */}
       <div>
         {!isQuest && (
@@ -57,6 +61,9 @@ export function LessonContentPanel({
           {isQuest ? "🏰 " : ""}{lessonTitle}
         </h1>
       </div>
+
+      {/* ===== Hero Visual Model ===== */}
+      {heroVisual && <VisualModelCard visual={heroVisual} />}
 
       {/* ===== Training Session Card (GYM EDITION) ===== */}
       <TrainingSessionCard

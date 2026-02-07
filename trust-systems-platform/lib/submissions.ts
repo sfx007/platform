@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getReviewSchedule, parseReviewScheduleDays } from "@/lib/schedule-reviews";
 import { validateProof } from "@/lib/validate-proof";
+import { logProgressEvent } from "@/lib/progress-events";
 import type { ProofRules } from "@/lib/schemas";
 
 type SubmissionStatus = "pending" | "passed" | "failed";
@@ -160,6 +161,15 @@ async function handleLessonPass(userId: string, lessonId: string, submissionId: 
   }
 
   await updateStreak(userId);
+
+  // Log progress event
+  await logProgressEvent(userId, isFirstPass ? "lesson_completed" : "proof_submitted", {
+    lessonId,
+    lessonTitle: lesson.title,
+    partSlug: lesson.part.slug,
+    status: "passed",
+    xpAwarded: isFirstPass ? (lesson.xpReward ?? 100) : 0,
+  });
 }
 
 async function handleQuestPass(userId: string, questId: string, submissionId: string) {
@@ -193,6 +203,15 @@ async function handleQuestPass(userId: string, questId: string, submissionId: st
   });
 
   await updateStreak(userId);
+
+  // Log progress event
+  await logProgressEvent(userId, isFirstPass ? "quest_completed" : "proof_submitted", {
+    questId,
+    questTitle: quest.title,
+    partSlug: quest.partId,
+    status: "passed",
+    xpAwarded: isFirstPass ? (quest.xpReward ?? 250) : 0,
+  });
 }
 
 export async function submitProof(input: SubmitProofInput): Promise<SubmitProofResult> {
@@ -237,6 +256,12 @@ export async function submitProof(input: SubmitProofInput): Promise<SubmitProofR
 
     if (status === "passed") {
       await handleLessonPass(input.userId, input.lessonId, submission.id);
+    } else {
+      // Log failed proof attempt
+      await logProgressEvent(input.userId, "proof_submitted", {
+        lessonId: input.lessonId,
+        status: "failed",
+      });
     }
 
     return { status, message, submissionId: submission.id };
@@ -271,6 +296,12 @@ export async function submitProof(input: SubmitProofInput): Promise<SubmitProofR
 
   if (status === "passed") {
     await handleQuestPass(input.userId, input.questId!, submission.id);
+  } else {
+    // Log failed proof attempt
+    await logProgressEvent(input.userId, "proof_submitted", {
+      questId: input.questId,
+      status: "failed",
+    });
   }
 
   return { status, message, submissionId: submission.id };

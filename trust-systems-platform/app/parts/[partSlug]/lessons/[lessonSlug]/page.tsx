@@ -4,6 +4,7 @@ import { markdownToHtml } from "@/lib/markdown";
 import { hasPassedLesson } from "@/lib/progress";
 import { extractLessonSections } from "@/lib/extract-sections";
 import { parseStarterCode } from "@/lib/starter-code";
+import { getHeroVisual } from "@/lib/visuals";
 import { LessonHeader } from "@/app/components/lesson/lesson-header";
 import { LessonSplitView } from "@/app/components/lesson/lesson-split-view";
 
@@ -25,13 +26,14 @@ export default async function LessonPage({
   if (!lesson) notFound();
 
   /* ---- Parallel data fetch ---- */
-  const [passed, allLessons] = await Promise.all([
+  const [passed, allLessons, heroVisual] = await Promise.all([
     hasPassedLesson(lesson.id),
     prisma.lesson.findMany({
       where: { partId: lesson.partId },
       orderBy: { order: "asc" },
       select: { slug: true, title: true, order: true },
     }),
+    getHeroVisual(lesson.id, lesson.contentId),
   ]);
 
   const rules = JSON.parse(lesson.proofRulesJson || lesson.proofRules || "{}");
@@ -89,6 +91,7 @@ export default async function LessonPage({
           passed={passed}
           contentHtml={contentHtml}
           starter={starter}
+          heroVisual={heroVisual}
           mode="lesson"
         />
       </div>
