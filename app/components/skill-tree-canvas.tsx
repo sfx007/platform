@@ -94,7 +94,7 @@ export function SkillTreeCanvas({
         "elk.edge.type": "orthogonal",
       },
       children: elkNodes,
-      edges: elkEdges as any,
+      edges: elkEdges as Array<{ id: string; sources: string[]; targets: string[] }>,
     };
 
     try {
@@ -114,7 +114,7 @@ export function SkillTreeCanvas({
           data: {
             label: skill.title,
             category: skill.category,
-            state: state as any,
+            state: state as "unlocked" | "locked" | "mastered",
             progress: Math.min(1, progress),
             description: skill.description,
           } as SkillNodeData,

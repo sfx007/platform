@@ -71,7 +71,7 @@ export function schedule(
   now: Date = new Date()
 ): ScheduleResult {
   const cfg = { ...DEFAULT_CONFIG, ...config };
-  let { easeFactor, intervalDays, repetitions, lapseCount } = state;
+  const { easeFactor, intervalDays, repetitions, lapseCount } = state;
 
   let newEase = easeFactor;
   let newInterval: number;

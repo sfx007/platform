@@ -33,15 +33,9 @@ const LEVEL_BADGES: Record<string, string> = {
 };
 
 export function SkillTree({ userSkills, onSkillClick }: SkillTreeProps) {
-  const [skillsData, setSkillsData] = useState<Map<string, UserSkill>>(
-    new Map()
+  const [skillsData] = useState<Map<string, UserSkill>>(
+    userSkills || new Map()
   );
-
-  useEffect(() => {
-    if (userSkills) {
-      setSkillsData(userSkills);
-    }
-  }, [userSkills]);
 
   // Group skills by category
   const skillsByCategory = CORE_SKILLS.reduce(
@@ -196,7 +190,7 @@ export function SkillTree({ userSkills, onSkillClick }: SkillTreeProps) {
             artifact shipped)
           </li>
           <li>
-            <strong>Contexts:</strong> Distinct project/scenario combos you've
+            <strong>Contexts:</strong> Distinct project/scenario combos you&apos;ve
             practiced in
           </li>
           <li>
