@@ -6,7 +6,7 @@
     "dev": "next dev",
     "dev:terminal": "npx tsx server/terminal-server.ts",
     "dev:full": "npx tsx server/terminal-server.ts & next dev -p 3060",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "eslint",
