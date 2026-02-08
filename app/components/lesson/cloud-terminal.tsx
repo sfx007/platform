@@ -86,9 +86,8 @@ export default function CloudTerminal({
 
     // ── Virtual Shell State ──
     let inputBuffer = "";
-    let historyList: string[] = [];
+    const historyList: string[] = [];
     let historyIdx = -1;
-    let currentLine = "";
     let running = false;
 
     const CWD = "/workspace";
