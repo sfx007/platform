@@ -59,9 +59,14 @@ export async function PATCH(request: Request) {
 
     if (typeof profileImage === "string") {
       const trimmedImage = profileImage.trim();
-      if (trimmedImage && !trimmedImage.startsWith("/") && !trimmedImage.startsWith("https://")) {
+      if (
+        trimmedImage &&
+        !trimmedImage.startsWith("/") &&
+        !trimmedImage.startsWith("https://") &&
+        !trimmedImage.startsWith("data:image/")
+      ) {
         return NextResponse.json(
-          { error: "Profile image must be a relative path or HTTPS URL" },
+          { error: "Profile image must be a relative path, HTTPS URL, or uploaded image" },
           { status: 400 }
         );
       }

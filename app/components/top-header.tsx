@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import Avatar from "@/app/components/avatar";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import LogoutButton from "@/app/components/logout-button";
@@ -220,13 +221,11 @@ export default function TopHeader({
                 title={displayName}
                 suppressHydrationWarning
               >
-                <Image
+                <Avatar
                   src={profileImage}
                   alt={displayName}
-                  width={32}
-                  height={32}
-                  className="h-full w-full object-cover"
-                  suppressHydrationWarning
+                  size={32}
+                  className="h-full w-full"
                 />
               </Link>
 
