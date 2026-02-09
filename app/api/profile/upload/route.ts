@@ -1,22 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { saveUploadedFile } from "@/lib/uploads";
 
-const MAX_SIZE = 512 * 1024; // 512 KB max (base64 will be ~680 KB in DB)
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
+    const formData = await request.formData();
+    const file = formData.get("profileImage");
 
-    if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    if (!(file instanceof File) || file.size === 0) {
+      return NextResponse.json(
+        { error: "No file provided" },
+        { status: 400 }
+      );
     }
 
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -28,20 +32,16 @@ export async function POST(req: NextRequest) {
 
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
-        { error: "Image must be under 512 KB. Try a smaller or more compressed image." },
+        { error: "File must be smaller than 5 MB" },
         { status: 400 }
       );
     }
 
-    // Convert to base64 data URL
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const base64 = buffer.toString("base64");
-    const dataUrl = `data:${file.type};base64,${base64}`;
+    const uploadPath = await saveUploadedFile(file);
 
-    // Save to database
     const updated = await prisma.user.update({
       where: { id: user.id },
-      data: { profileImage: dataUrl },
+      data: { profileImage: uploadPath },
       select: {
         username: true,
         displayName: true,
@@ -50,14 +50,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      profileImage: updated.profileImage,
-    });
+    return NextResponse.json(updated);
   } catch (error) {
-    console.error("Profile upload error:", error);
+    console.error("Profile image upload error:", error);
     return NextResponse.json(
-      { error: "Failed to upload image" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
