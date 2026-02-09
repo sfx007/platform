@@ -200,7 +200,17 @@ Recent Skills: ${opts.learner.recentSkills.map(s => `${s.skill}(${s.level})`).jo
   return parts.join("\n\n");
 }
 
-/* ─── Call Gemini ─── */
+/* ─── Call Gemini (with model fallback + retry) ─── */
+
+const GEMINI_MODELS = [
+  "gemini-1.5-flash",
+  "gemini-1.5-pro",
+  "gemini-2.0-flash",
+];
+
+async function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export async function callAIMonitor(
   userMessage: string,
@@ -214,7 +224,7 @@ export async function callAIMonitor(
   // Build Gemini conversation format
   const contents: { role: string; parts: { text: string }[] }[] = [];
 
-  // System instruction goes as first "user" turn followed by model ack in Gemini
+  // System instruction as first user turn + model ack
   contents.push({ role: "user", parts: [{ text: SYSTEM_PROMPT + "\n\nAcknowledge you understand by responding with a short JSON confirming ready." }] });
   contents.push({ role: "model", parts: [{ text: '{"coach_mode":"warmup","message":"AI Monitor ready. Send me the learner context.","diagnosis":{"failure_types":[],"confidence":0,"evidence":[]},"next_actions":[],"graduated_hints":[],"flashcards_to_create":[],"skill_updates":[],"log_update":{"session_summary":"","mistakes":"","what_to_do_next_time":""}}' }] });
 
@@ -229,30 +239,50 @@ export async function callAIMonitor(
   // Add current user message
   contents.push({ role: "user", parts: [{ text: userMessage }] });
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048,
-          responseMimeType: "application/json",
-        },
-      }),
-    }
-  );
+  const body = JSON.stringify({
+    contents,
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 2048,
+      responseMimeType: "application/json",
+    },
+  });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini API error (${res.status}): ${errText}`);
+  // Try each model, with retry on 429
+  let lastError = "";
+  for (const model of GEMINI_MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        }
+      );
+
+      if (res.status === 429) {
+        // Rate limited — wait and retry or try next model
+        lastError = `Rate limited on ${model}`;
+        await sleep(attempt === 0 ? 3000 : 10000);
+        continue;
+      }
+
+      if (!res.ok) {
+        lastError = await res.text();
+        break; // Try next model
+      }
+
+      const data = await res.json();
+      const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+      return parseCoachResponse(raw);
+    }
   }
 
-  const data = await res.json();
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+  throw new Error(`All Gemini models failed. Last error: ${lastError}`);
+}
 
+function parseCoachResponse(raw: string): CoachResponse {
   try {
     const parsed = JSON.parse(raw) as CoachResponse;
     return {
