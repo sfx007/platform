@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Avatar from "@/app/components/avatar";
 import { prisma } from "@/lib/db";
 import { getRankName } from "@/lib/auth";
 
@@ -88,12 +89,11 @@ export default async function LeaderboardPage() {
                 {/* Player */}
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-700 flex-shrink-0">
-                    <Image
+                    <Avatar
                       src={user.profileImage || "/img/new_boots_profile.webp"}
                       alt={user.displayName || user.username}
-                      width={32}
-                      height={32}
-                      className="w-full h-full object-cover"
+                      size={32}
+                      className="w-full h-full"
                     />
                   </div>
                   <div className="min-w-0">
@@ -208,12 +208,11 @@ function PodiumCard({
           isFirst ? "border-yellow-500" : "border-gray-600"
         }`}
       >
-        <Image
+        <Avatar
           src={user.profileImage || "/img/new_boots_profile.webp"}
           alt={user.displayName || user.username}
-          width={56}
-          height={56}
-          className="w-full h-full object-cover"
+          size={56}
+          className="w-full h-full"
         />
       </div>
       <p className="text-sm font-bold text-gray-100 truncate max-w-full">

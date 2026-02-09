@@ -19,6 +19,7 @@ export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -136,13 +137,42 @@ export default function ProfilePage() {
       {/* Preview card */}
       {profile && (
         <div className="game-card p-5 mb-6 flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-gray-700 flex-shrink-0">
-            <Image
+          <div
+            className={`relative h-20 w-20 rounded-full overflow-hidden border-2 flex-shrink-0 cursor-pointer group transition-all ${
+              dragOver ? "border-yellow-400 ring-2 ring-yellow-500/40" : "border-gray-700 hover:border-yellow-500"
+            }`}
+            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={profileImage || "/img/new_boots_profile.webp"}
               alt={displayName || profile.username}
-              width={64}
-              height={64}
               className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              {uploading ? (
+                <div className="w-5 h-5 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileUpload(file);
+                e.target.value = "";
+              }}
             />
           </div>
           <div className="min-w-0">
@@ -151,6 +181,14 @@ export default function ProfilePage() {
             </p>
             <p className="text-sm text-gray-500">@{profile.username}</p>
             {bio && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{bio}</p>}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="mt-2 text-[11px] text-yellow-500 hover:text-yellow-400 font-semibold transition-colors disabled:opacity-50"
+            >
+              {uploading ? "Uploading…" : "📷 Change Picture"}
+            </button>
           </div>
         </div>
       )}
