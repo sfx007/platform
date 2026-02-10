@@ -24,6 +24,7 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [profileImage, setProfileImage] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -171,6 +172,29 @@ export default function ProfilePage() {
       setPwMessage({ type: "error", text: "Network error — please try again" });
     } finally {
       setPwSaving(false);
+    }
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.files = dt.files;
+      fileInputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
     }
   }
 

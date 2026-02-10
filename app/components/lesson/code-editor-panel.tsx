@@ -58,8 +58,8 @@ export function CodeEditorPanel({
   partSlug,
   lessonSlug,
   starter,
-  mode,
-  passed,
+  mode: _mode,
+  passed: _passed,
 }: CodeEditorPanelProps) {
   const [workspaceDir, setWorkspaceDir] = useState<string>("");
   const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
