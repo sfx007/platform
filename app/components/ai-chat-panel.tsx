@@ -176,7 +176,7 @@ export default function AIChatPanel({
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 text-white shadow-lg shadow-yellow-500/25 hover:shadow-yellow-500/40 transition-all hover:scale-105 flex items-center justify-center text-2xl"
+        className="fixed bottom-[420px] sm:bottom-6 right-4 sm:right-6 z-50 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 text-white shadow-lg shadow-yellow-500/25 hover:shadow-yellow-500/40 transition-all hover:scale-105 flex items-center justify-center text-xl sm:text-2xl"
         title="AI Monitor"
       >
         🤖
@@ -185,7 +185,7 @@ export default function AIChatPanel({
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-[420px] h-[600px] bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden">
+    <div className="fixed inset-0 sm:inset-auto sm:bottom-6 sm:right-6 z-50 w-full sm:w-[420px] h-full sm:h-[600px] bg-gray-900 border-0 sm:border border-gray-700 sm:rounded-2xl shadow-2xl shadow-black/50 flex flex-col overflow-hidden">
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-gray-800 to-gray-850 border-b border-gray-700 shrink-0">
         <div className="flex items-center gap-2">
