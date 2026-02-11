@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Avatar from "@/app/components/avatar";
 import { getSessionToken } from "@/app/components/session-guard";
 
@@ -104,6 +106,7 @@ function isImageUrl(url: string) {
 
 /* ================================================================ */
 export default function PrivateChatPage() {
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<DM[]>([]);
@@ -118,6 +121,7 @@ export default function PrivateChatPage() {
   const [searchResults, setSearchResults] = useState<DMUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [autoOpenHandled, setAutoOpenHandled] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -134,6 +138,31 @@ export default function PrivateChatPage() {
       .then((d) => { if (d?.user?.id) setCurrentUserId(d.user.id); })
       .catch(() => {});
   }, []);
+
+  /* ── Auto-open DM when ?user=username is in URL ── */
+  useEffect(() => {
+    if (autoOpenHandled) return;
+    const targetUsername = searchParams.get("user");
+    if (!targetUsername) return;
+
+    async function autoOpen() {
+      try {
+        // Look up the user by username
+        const base = apiUrl("/api/dm/users");
+        const sep = base.includes("?") ? "&" : "?";
+        const res = await fetch(`${base}${sep}q=${encodeURIComponent(targetUsername!)}`, { credentials: "include" });
+        if (!res.ok) return;
+        const json = await res.json();
+        const targetUser = json.users?.find((u: DMUser) => u.username === targetUsername);
+        if (targetUser) {
+          await startDMWith(targetUser);
+        }
+      } catch { /* ignore */ }
+      finally { setAutoOpenHandled(true); }
+    }
+    autoOpen();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenHandled, searchParams]);
 
   /* ── Fetch conversations ── */
   const fetchConversations = useCallback(async () => {
@@ -265,7 +294,7 @@ export default function PrivateChatPage() {
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch(apiUrl("/api/chat/upload"), {
+      const res = await fetch(apiUrl("/api/dm/upload"), {
         method: "POST",
         credentials: "include",
         body: form,
@@ -480,13 +509,13 @@ export default function PrivateChatPage() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
 
-              <div className="relative shrink-0">
+              <Link href={`/profile/${activeConv.otherUser.username}`} className="relative shrink-0 hover:opacity-80 transition-opacity">
                 <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-700">
                   <Avatar src={activeConv.otherUser.profileImage} alt={activeConv.otherUser.displayName} size={36} className="w-full h-full" />
                 </div>
                 {isOnline(activeConv.otherUser.lastActiveAt) && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-[#0e1321]" />}
-              </div>
-              <div className="min-w-0 flex-1">
+              </Link>
+              <Link href={`/profile/${activeConv.otherUser.username}`} className="min-w-0 flex-1 hover:opacity-80 transition-opacity">
                 <p className="text-sm font-semibold text-gray-200 truncate">{activeConv.otherUser.displayName || activeConv.otherUser.username}</p>
                 <p className="text-[11px] text-gray-500">
                   {isOnline(activeConv.otherUser.lastActiveAt) ? (
@@ -495,7 +524,7 @@ export default function PrivateChatPage() {
                     `Last seen ${formatRelative(activeConv.otherUser.lastActiveAt)}`
                   )}
                 </p>
-              </div>
+              </Link>
             </div>
 
             {/* Messages */}
@@ -518,9 +547,9 @@ export default function PrivateChatPage() {
                       )}
                       <div id={`dm-${msg.id}`} className={`flex mb-1.5 group transition-all duration-300 ${isMe ? "justify-end" : "justify-start"}`}>
                         {!isMe && (
-                          <div className="w-7 h-7 rounded-full overflow-hidden border border-gray-700 shrink-0 mt-1 mr-1.5">
+                          <Link href={`/profile/${msg.sender.username}`} className="w-7 h-7 rounded-full overflow-hidden border border-gray-700 shrink-0 mt-1 mr-1.5 hover:opacity-80 transition-opacity">
                             <Avatar src={msg.sender.profileImage || "/img/new_boots_profile.webp"} alt={msg.sender.displayName} size={28} className="w-full h-full" />
-                          </div>
+                          </Link>
                         )}
                         <div className={`relative max-w-[75%] rounded-xl px-3 py-2 ${
                           isMe ? "bg-blue-500/15 border border-blue-500/20 rounded-tr-sm" : "bg-gray-800/80 border border-gray-700/50 rounded-tl-sm"

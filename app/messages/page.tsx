@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { getCurrentUser, getSessionToken } from "@/lib/auth";
 import { getUserBySessionToken } from "@/lib/auth";
 import PrivateChatPage from "@/app/components/private-chat";
@@ -16,5 +17,9 @@ export default async function MessagesPage() {
   }
   if (!user) redirect("/login");
 
-  return <PrivateChatPage />;
+  return (
+    <Suspense>
+      <PrivateChatPage />
+    </Suspense>
+  );
 }

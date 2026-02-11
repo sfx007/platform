@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import Avatar from "@/app/components/avatar";
 import { getSessionToken } from "@/app/components/session-guard";
 
@@ -363,14 +364,14 @@ export default function GeneralChat() {
                 >
                   {/* Avatar (others only) */}
                   {!isMe && (
-                    <div className="w-7 h-7 rounded-full overflow-hidden border border-gray-700 shrink-0 mt-1 mr-1.5">
+                    <Link href={`/profile/${msg.user.username}`} className="w-7 h-7 rounded-full overflow-hidden border border-gray-700 shrink-0 mt-1 mr-1.5 hover:opacity-80 transition-opacity">
                       <Avatar
                         src={msg.user.profileImage || "/img/new_boots_profile.webp"}
                         alt={msg.user.displayName}
                         size={28}
                         className="w-full h-full"
                       />
-                    </div>
+                    </Link>
                   )}
 
                   <div
@@ -383,9 +384,9 @@ export default function GeneralChat() {
                     {/* Username + level (others) */}
                     {!isMe && (
                       <div className="flex items-baseline gap-1.5 mb-0.5">
-                        <span className="text-[11px] font-semibold text-green-400">
+                        <Link href={`/profile/${msg.user.username}`} className="text-[11px] font-semibold text-green-400 hover:underline">
                           {msg.user.displayName || msg.user.username}
-                        </span>
+                        </Link>
                         <span className="text-[9px] text-gray-600">Lv{msg.user.level}</span>
                       </div>
                     )}

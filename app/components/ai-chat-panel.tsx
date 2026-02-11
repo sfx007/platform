@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 
 /* ─── Types matching the AI monitor JSON schema ─── */
 interface CoachAction {
@@ -163,6 +164,7 @@ export default function AIChatPanel({
   };
 
   const lastCoach = [...messages].reverse().find((m) => m.coachData)?.coachData;
+  const pathname = usePathname();
 
   // Quick action buttons
   const quickActions = [
@@ -172,7 +174,11 @@ export default function AIChatPanel({
     { label: "✅ Check My Proof", msg: "Check my proof. Does it meet the pass criteria?" },
   ];
 
+  // Hide floating button on the messages page (overlaps the DM send area)
+  const hideFloatingButton = pathname === "/messages";
+
   if (!isOpen) {
+    if (hideFloatingButton) return null;
     return (
       <button
         onClick={() => setIsOpen(true)}
