@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-interface TreeEntry {
+export interface TreeEntry {
   name: string;
   path: string;
   type: "file" | "directory";
@@ -12,6 +12,14 @@ interface TreeEntry {
 interface FileTreeProps {
   /** Root directory to display */
   rootDir: string;
+  /** Optional externally managed entries (e.g. browser-local folder mode) */
+  entries?: TreeEntry[];
+  /** Optional externally managed loading state */
+  loading?: boolean;
+  /** Optional externally managed error state */
+  error?: string | null;
+  /** Optional custom refresh callback for external mode */
+  onRefresh?: () => void;
   /** Currently open file path */
   activeFile?: string;
   /** Called when user clicks a file */
@@ -24,6 +32,10 @@ interface FileTreeProps {
 
 export function FileTree({
   rootDir,
+  entries: controlledEntries,
+  loading: controlledLoading,
+  error: controlledError,
+  onRefresh,
   activeFile,
   onOpenFile,
   onOpenFolder,
@@ -32,6 +44,7 @@ export function FileTree({
   const [entries, setEntries] = useState<TreeEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isControlled = controlledEntries !== undefined;
 
   const loadTree = useCallback(async () => {
     try {
@@ -55,8 +68,10 @@ export function FileTree({
   }, [rootDir]);
 
   useEffect(() => {
-    loadTree();
-  }, [loadTree]);
+    if (!isControlled) {
+      loadTree();
+    }
+  }, [isControlled, loadTree]);
 
   // Folder name for the header
   const rootName = rootDir.split("/").filter(Boolean).pop() || rootDir;
@@ -83,7 +98,17 @@ export function FileTree({
     [hiddenSet]
   );
 
-  const visibleEntries = filterEntries(entries);
+  const resolvedEntries = isControlled ? controlledEntries : entries;
+  const resolvedLoading = isControlled ? Boolean(controlledLoading) : loading;
+  const resolvedError = isControlled ? controlledError || null : error;
+  const visibleEntries = filterEntries(resolvedEntries || []);
+  const refresh = () => {
+    if (isControlled) {
+      onRefresh?.();
+      return;
+    }
+    void loadTree();
+  };
 
   return (
     <div className="flex flex-col h-full bg-gray-950 text-sm select-none overflow-hidden">
@@ -105,7 +130,7 @@ export function FileTree({
           )}
           <button
             type="button"
-            onClick={loadTree}
+            onClick={refresh}
             className="text-gray-500 hover:text-gray-300 transition-colors text-xs p-0.5"
             title="Refresh file tree"
           >
@@ -116,13 +141,13 @@ export function FileTree({
 
       {/* Tree body */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden py-1">
-        {loading && (
+        {resolvedLoading && (
           <div className="px-3 py-2 text-gray-500 text-xs">Loading…</div>
         )}
-        {error && (
-          <div className="px-3 py-2 text-red-400 text-xs">{error}</div>
+        {resolvedError && (
+          <div className="px-3 py-2 text-red-400 text-xs">{resolvedError}</div>
         )}
-        {!loading && !error && visibleEntries.length === 0 && (
+        {!resolvedLoading && !resolvedError && visibleEntries.length === 0 && (
           <div className="px-3 py-2 text-gray-600 text-xs">Empty directory</div>
         )}
         {visibleEntries.map((entry) => (

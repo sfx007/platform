@@ -975,3 +975,31 @@
   - `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 - Next step:
   - Hard-refresh `/parts/w01` and verify list shows Intro + Lessons 1..N + Boss + Quiz with no `Training:` duplicates.
+
+## Entry — Local Machine Folder Connection in Lesson Editor
+- UTC timestamp: 2026-02-12T05:20:01Z
+- What changed:
+  - Added browser-local folder mode to lesson editor so files are read/written directly from user-selected local directory (`showDirectoryPicker` + File System Access API).
+  - Extended file tree component to support controlled external entries (used for local mode) while keeping existing server-backed mode unchanged.
+  - Added workspace mode switch controls in editor toolbar:
+    - `Local Folder` (connect browser-local directory)
+    - `Server Folder` (return to existing server workspace)
+    - existing `Open Folder` remains for server browsing.
+  - Disabled `Testing` command in local-folder mode and added explicit terminal notice because terminal commands run against server workspace.
+- Files created/modified:
+  - `app/components/lesson/code-editor-panel.tsx`
+  - `app/components/lesson/file-tree.tsx`
+  - `progress/BUILD_LOG.md`
+  - `progress/TODO.md`
+  - `progress/HANDOFF.md`
+- Commands run:
+  - `ls -la`
+  - `rg --files`
+  - `rg -n "editor|monaco|terminal|filesystem|FileSystem"`
+  - `sed -n ... app/components/lesson/code-editor-panel.tsx`
+  - `sed -n ... app/components/lesson/file-tree.tsx`
+  - `sed -n ... app/api/fs/*`
+  - `node -v && npm -v && npm run -s lint` (failed: `node: command not found`)
+  - `date -u +"%Y-%m-%dT%H:%M:%SZ"`
+- Next step:
+  - Verify in browser: click `Local Folder`, pick a local directory, edit and save a file, refresh tree, then switch back to `Server Folder`.

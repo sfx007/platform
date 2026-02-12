@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import type { editor as monacoEditor } from "monaco-editor";
 import { Group, Panel, Separator } from "react-resizable-panels";
-import { FileTree } from "./file-tree";
+import { FileTree, type TreeEntry } from "./file-tree";
 import { FolderPicker } from "./folder-picker";
 import { guessLanguage, type StarterFiles } from "@/lib/starter-code";
 import { useEditorMode } from "@/lib/use-editor-mode";
@@ -17,6 +17,113 @@ function workspaceStorageKey(lessonId: string, partSlug: string) {
     return "tsp_workspace_w01_trustctl";
   }
   return `tsp_workspace_${lessonId}`;
+}
+
+type WorkspaceMode = "server" | "local";
+
+type BrowserFileWritable = {
+  write: (data: string) => Promise<void>;
+  close: () => Promise<void>;
+};
+
+type BrowserFileHandle = {
+  kind: "file";
+  name: string;
+  getFile: () => Promise<File>;
+  createWritable: () => Promise<BrowserFileWritable>;
+};
+
+type BrowserDirectoryHandle = {
+  kind: "directory";
+  name: string;
+  entries: () => AsyncIterableIterator<[string, BrowserFileSystemHandle]>;
+};
+
+type BrowserFileSystemHandle = BrowserFileHandle | BrowserDirectoryHandle;
+
+type DirectoryPickerFn = (options?: {
+  mode?: "read" | "readwrite";
+}) => Promise<BrowserDirectoryHandle>;
+
+const LOCAL_IGNORED = new Set([
+  "node_modules",
+  ".git",
+  ".next",
+  "__pycache__",
+  ".DS_Store",
+  "dist",
+  "build",
+  ".cache",
+]);
+
+function sortTreeEntries(entries: TreeEntry[]): TreeEntry[] {
+  return entries.sort((a, b) => {
+    if (a.type === "directory" && b.type !== "directory") return -1;
+    if (a.type !== "directory" && b.type === "directory") return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+async function buildBrowserLocalTree(
+  dir: BrowserDirectoryHandle,
+  depth: number,
+  basePath: string,
+  hidden: Set<string>,
+  fileMap: Map<string, BrowserFileHandle>
+): Promise<TreeEntry[]> {
+  if (depth <= 0) return [];
+
+  const entries: TreeEntry[] = [];
+  for await (const [name, handle] of dir.entries()) {
+    if (LOCAL_IGNORED.has(name)) continue;
+    if (name.startsWith(".")) continue;
+
+    const relPath = basePath ? `${basePath}/${name}` : name;
+
+    if (handle.kind === "directory") {
+      const childEntries = await buildBrowserLocalTree(
+        handle,
+        depth - 1,
+        relPath,
+        hidden,
+        fileMap
+      );
+      entries.push({
+        name,
+        path: relPath,
+        type: "directory",
+        children: sortTreeEntries(childEntries),
+      });
+      continue;
+    }
+
+    if (hidden.has(name.toLowerCase())) continue;
+    fileMap.set(relPath, handle);
+    entries.push({ name, path: relPath, type: "file" });
+  }
+
+  return sortTreeEntries(entries);
+}
+
+function collectFilePaths(entries: TreeEntry[]): string[] {
+  const files: string[] = [];
+  const walk = (nodes: TreeEntry[]) => {
+    for (const node of nodes) {
+      if (node.type === "file") {
+        files.push(node.path);
+      } else if (node.children?.length) {
+        walk(node.children);
+      }
+    }
+  };
+  walk(entries);
+  return files;
+}
+
+function pickDefaultPath(entries: TreeEntry[]): string | null {
+  const files = collectFilePaths(entries);
+  const srcMain = files.find((p) => /(^|\/)src\/main\.cpp$/i.test(p));
+  return srcMain || files[0] || null;
 }
 
 // Dynamic imports for heavy client-only components
@@ -69,7 +176,12 @@ export function CodeEditorPanel({
   const hiddenRootFileNames = partSlug === "w01"
     ? ["Makefile", "CMakeLists.txt"]
     : [];
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("server");
   const [workspaceDir, setWorkspaceDir] = useState<string>("");
+  const [localRootName, setLocalRootName] = useState<string>("");
+  const [localEntries, setLocalEntries] = useState<TreeEntry[]>([]);
+  const [localLoading, setLocalLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [openFiles, setOpenFiles] = useState<OpenFile[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
   const [showTree, setShowTree] = useState(true);
@@ -83,11 +195,79 @@ export function CodeEditorPanel({
   const vimStatusRef = useRef<HTMLDivElement>(null);
   const vimModeRef = useRef<{ dispose: () => void } | null>(null);
   const editorInstanceRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null);
+  const localRootHandleRef = useRef<BrowserDirectoryHandle | null>(null);
+  const localFileMapRef = useRef<Map<string, BrowserFileHandle>>(new Map());
+
+  const refreshLocalTree = useCallback(async () => {
+    const rootHandle = localRootHandleRef.current;
+    if (!rootHandle) return [] as TreeEntry[];
+
+    setLocalLoading(true);
+    setLocalError(null);
+    try {
+      const hidden = new Set(hiddenRootFileNames.map((name) => name.toLowerCase()));
+      const fileMap = new Map<string, BrowserFileHandle>();
+      const tree = await buildBrowserLocalTree(rootHandle, 6, "", hidden, fileMap);
+      localFileMapRef.current = fileMap;
+      setLocalEntries(tree);
+      return tree;
+    } catch {
+      setLocalError("Failed to load local folder. Reconnect and try again.");
+      return [] as TreeEntry[];
+    } finally {
+      setLocalLoading(false);
+    }
+  }, [hiddenRootFileNames]);
+
+  const connectLocalFolder = useCallback(async () => {
+    const picker = (window as Window & { showDirectoryPicker?: DirectoryPickerFn }).showDirectoryPicker;
+    if (!picker) {
+      const msg = "Local folder connection requires Chromium and localhost/https.";
+      setLocalError(msg);
+      window.alert(msg);
+      return;
+    }
+
+    try {
+      const handle = await picker({ mode: "readwrite" });
+      localRootHandleRef.current = handle;
+      setWorkspaceMode("local");
+      setLocalRootName(handle.name || "Local Folder");
+      setOpenFiles([]);
+      setActiveIdx(0);
+      setReady(true);
+
+      const tree = await refreshLocalTree();
+      const defaultPath = pickDefaultPath(tree);
+      if (defaultPath) {
+        const fileHandle = localFileMapRef.current.get(defaultPath);
+        if (fileHandle) {
+          const file = await fileHandle.getFile();
+          const content = await file.text();
+          setOpenFiles([
+            {
+              path: defaultPath,
+              name: defaultPath.split("/").pop() || defaultPath,
+              content,
+              dirty: false,
+            },
+          ]);
+        }
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+      setLocalError("Failed to connect local folder.");
+    }
+  }, [refreshLocalTree]);
 
   /* ── Open a workspace directory (re-usable) ── */
   const openWorkspace = useCallback(
     async (dir: string) => {
+      setWorkspaceMode("server");
       setWorkspaceDir(dir);
+      setLocalError(null);
       setOpenFiles([]);
       setActiveIdx(0);
       setReady(true);
@@ -265,23 +445,39 @@ export function CodeEditorPanel({
         setActiveIdx(existingIdx);
         return;
       }
+      if (workspaceMode === "local") {
+        try {
+          const handle = localFileMapRef.current.get(filePath);
+          if (!handle) return;
+          const file = await handle.getFile();
+          const content = await file.text();
+          const name = filePath.split("/").pop() || filePath;
+          setOpenFiles((prev) => {
+            const next = [...prev, { path: filePath, name, content, dirty: false }];
+            setActiveIdx(next.length - 1);
+            return next;
+          });
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
       try {
-        const res = await fetch(
-          `/api/fs/read?path=${encodeURIComponent(filePath)}`
-        );
+        const res = await fetch(`/api/fs/read?path=${encodeURIComponent(filePath)}`);
         if (!res.ok) return;
         const data = await res.json();
         const name = filePath.split("/").pop() || filePath;
-        setOpenFiles((prev) => [
-          ...prev,
-          { path: filePath, name, content: data.content, dirty: false },
-        ]);
-        setActiveIdx(openFiles.length);
+        setOpenFiles((prev) => {
+          const next = [...prev, { path: filePath, name, content: data.content, dirty: false }];
+          setActiveIdx(next.length - 1);
+          return next;
+        });
       } catch {
         // ignore
       }
     },
-    [openFiles]
+    [openFiles, workspaceMode]
   );
 
   /* ── Close a tab ── */
@@ -298,11 +494,19 @@ export function CodeEditorPanel({
   const saveFile = useCallback(async (filePath: string, content: string) => {
     try {
       setSaving(true);
-      await fetch("/api/fs/write", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: filePath, content }),
-      });
+      if (workspaceMode === "local") {
+        const handle = localFileMapRef.current.get(filePath);
+        if (!handle) throw new Error("Local file handle not found");
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+      } else {
+        await fetch("/api/fs/write", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: filePath, content }),
+        });
+      }
       setOpenFiles((prev) =>
         prev.map((f) => (f.path === filePath ? { ...f, dirty: false } : f))
       );
@@ -311,7 +515,7 @@ export function CodeEditorPanel({
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [workspaceMode]);
 
   /* ── Handle Monaco code changes (debounced auto-save to disk) ── */
   const handleCodeChange = useCallback(
@@ -375,32 +579,50 @@ export function CodeEditorPanel({
     attachVim();
   }
 
+  const switchToServerWorkspace = useCallback(async () => {
+    if (!workspaceDir) return;
+    await openWorkspace(workspaceDir);
+  }, [openWorkspace, workspaceDir]);
+
   const activeFile = openFiles[activeIdx];
   const currentLang = activeFile ? guessLanguage(activeFile.name) : "plaintext";
+  const hasWorkspaceRoot = workspaceMode === "local"
+    ? Boolean(localRootHandleRef.current)
+    : Boolean(workspaceDir);
 
   return (
     <div className="flex h-full">
       {/* ── File tree sidebar ── */}
       {/* ── Folder picker modal ── */}
-      {folderPickerOpen && (
+      {workspaceMode === "server" && folderPickerOpen && (
         <FolderPicker
           currentDir={workspaceDir || undefined}
           onSelect={(dir) => {
             setFolderPickerOpen(false);
-            openWorkspace(dir);
+            void openWorkspace(dir);
           }}
           onClose={() => setFolderPickerOpen(false)}
         />
       )}
 
       {/* ── File tree sidebar ── */}
-      {showTree && workspaceDir && (
+      {showTree && hasWorkspaceRoot && (
         <div className="w-48 shrink-0 border-r border-gray-700 overflow-hidden">
           <FileTree
-            rootDir={workspaceDir}
+            rootDir={workspaceMode === "local" ? localRootName || "Local Folder" : workspaceDir}
+            entries={workspaceMode === "local" ? localEntries : undefined}
+            loading={workspaceMode === "local" ? localLoading : undefined}
+            error={workspaceMode === "local" ? localError : undefined}
+            onRefresh={workspaceMode === "local" ? () => { void refreshLocalTree(); } : undefined}
             activeFile={activeFile?.path}
             onOpenFile={handleOpenFile}
-            onOpenFolder={() => setFolderPickerOpen(true)}
+            onOpenFolder={() => {
+              if (workspaceMode === "local") {
+                void connectLocalFolder();
+                return;
+              }
+              setFolderPickerOpen(true);
+            }}
             hiddenFileNames={hiddenRootFileNames}
           />
         </div>
@@ -453,11 +675,36 @@ export function CodeEditorPanel({
 
           {/* Status + actions */}
           <div className="ml-auto flex items-center gap-1 px-2 shrink-0">
+            <span className="text-[10px] uppercase tracking-wide text-gray-500 px-1">
+              {workspaceMode === "local" ? "local" : "server"}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                void connectLocalFolder();
+              }}
+              className="editor-btn text-[11px]"
+              title="Connect browser-local folder"
+            >
+              💻 Local Folder
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void switchToServerWorkspace();
+              }}
+              className="editor-btn text-[11px]"
+              title="Switch back to server workspace"
+              disabled={!workspaceDir}
+            >
+              ☁ Server Folder
+            </button>
             <button
               type="button"
               onClick={() => setFolderPickerOpen(true)}
               className="editor-btn text-[11px]"
-              title="Open folder…"
+              title="Browse server workspace folders"
+              disabled={workspaceMode !== "server"}
             >
               📂 Open Folder
             </button>
@@ -474,8 +721,12 @@ export function CodeEditorPanel({
                 terminalRef.current?.sendCommand("make test");
               }}
               className="editor-btn text-[11px]"
-              title="Run make test in the embedded terminal"
-              disabled={!workspaceDir}
+              title={
+                workspaceMode === "local"
+                  ? "Testing runs only in server workspace mode"
+                  : "Run make test in the embedded terminal"
+              }
+              disabled={!workspaceDir || workspaceMode !== "server"}
             >
               🧪 Testing
             </button>
@@ -566,7 +817,11 @@ export function CodeEditorPanel({
 
           {/* Cloud terminal */}
           <Panel defaultSize={40} minSize={15}>
-            {ready ? (
+            {workspaceMode === "local" ? (
+              <div className="flex items-center justify-center h-full bg-[#0a0a0f] text-gray-500 text-sm text-center px-6">
+                Local-folder mode is active. Terminal commands run only in the server workspace.
+              </div>
+            ) : ready ? (
               <XtermTerminal
                 ref={terminalRef}
                 wsUrl="ws://localhost:3061"

@@ -90,6 +90,11 @@
 - Week 01 training content adjusted:
   - `docs/cli-contract.md` is optional guidance, not required proof.
   - Main proof emphasis is code behavior + deterministic tests.
+- Lesson editor now supports direct local-machine folder connection (browser File System Access API):
+  - Toolbar has `Local Folder` button to attach a browser-selected directory.
+  - File tree/editor open/save works on local files without routing through `/api/fs/read`/`write`.
+  - `Server Folder` button switches back to existing server workspace flow.
+  - Terminal + `🧪 Testing` remain server-workspace only by design.
 
 ## What Is Unfinished
 - Migration SQL was added but not executed in this environment.
@@ -117,3 +122,5 @@
 - VisualAsset uses `localPath` for image URL (external `download_url` if not stored locally).
 - Middleware matcher excludes `/api/*`, so client-side API calls must pass session token explicitly when cookies are unavailable.
 - `make test` depends on system tools (`make`, `bash`, `cmake`, `c++`, `python3`) being available in runtime environment for `/api/fs/exec`.
+- Local-folder mode requires Chromium-based browser with File System Access API and a secure context (`localhost`/HTTPS).
+- In local-folder mode, terminal commands do not execute against local browser files; user must switch to `Server Folder` for embedded terminal runs.

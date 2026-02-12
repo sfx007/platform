@@ -43,4 +43,5 @@
 - [x] Hide Week 01 `Makefile` / `CMakeLists.txt` from lesson file tree so learner builds own setup without scaffold leakage
 - [x] Add kind-aware content filtering: hide `training` from Part page, keep training-only UI in `/training`, and add Intro/Quiz entries
 - [x] Remove hard requirement to create `docs/cli-contract.md` in Week 01 training content (make optional; code+tests first)
+- [x] Add lesson editor local-folder mode so file tree/editor can connect to browser-selected local machine directory
 - [ ] Final QA walkthrough and finalize HANDOFF snapshot
