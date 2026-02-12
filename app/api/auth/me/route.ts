@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserBySessionToken } from "@/lib/auth";
 
 /** Lightweight session-check endpoint.
- *  Returns { ok: true, username } if the token is valid,
+ *  Returns { ok: true, user: { id, username } } if the token is valid,
  *  or { ok: false } if not.
  */
 export async function GET(req: NextRequest) {
@@ -20,7 +20,11 @@ export async function GET(req: NextRequest) {
     if (!user) {
       return NextResponse.json({ ok: false });
     }
-    return NextResponse.json({ ok: true, username: user.username });
+    return NextResponse.json({
+      ok: true,
+      username: user.username,
+      user: { id: user.id, username: user.username },
+    });
   } catch {
     return NextResponse.json({ ok: false });
   }
