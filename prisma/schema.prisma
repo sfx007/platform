@@ -58,15 +58,32 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Part {
+// ── Courses (Learning Paths) ─────────────────────────────────
+
+model Course {
   id          String @id @default(cuid())
   slug        String @unique
   title       String
+  description String @default("")
+  icon        String @default("📚") // emoji or image path
+  order       Int    @default(0)
+  published   Boolean @default(true)
+  createdAt   DateTime @default(now())
+
+  parts Part[]
+}
+
+model Part {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  title       String
   description String
   order       Int
+  courseId     String?
 
-  lessons Lesson[]
-  quest   Quest?
+  course     Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lessons    Lesson[]
+  quest      Quest?
   partVisual PartVisual?
 }
 
