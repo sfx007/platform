@@ -655,23 +655,29 @@ export function CodeEditorPanel({
       };
 
       if (!w.__tspVimCommandsRegistered) {
-        VimMode.Vim.defineEx("write", "w", () => {
-          void (window as VWindow).__tspVimHook?.save();
-        });
-        VimMode.Vim.defineEx("quit", "q", () => {
-          (window as VWindow).__tspVimHook?.quit();
-        });
-        VimMode.Vim.defineEx("wq", "wq", () => {
-          void (window as VWindow).__tspVimHook?.writeQuit();
-        });
-        VimMode.Vim.defineEx("xit", "x", () => {
-          void (window as VWindow).__tspVimHook?.writeQuit();
-        });
-        VimMode.Vim.defineEx("bdelete", "bd", () => {
-          (window as VWindow).__tspVimHook?.quit();
-        });
-        VimMode.Vim.map("jj", "<Esc>", "insert");
-        VimMode.Vim.map("jk", "<Esc>", "insert");
+        const vimApi = (VimMode as unknown as { Vim?: {
+          defineEx: (name: string, shortName: string, fn: () => void) => void;
+          map: (lhs: string, rhs: string, context?: string) => void;
+        } }).Vim;
+        if (vimApi) {
+          vimApi.defineEx("write", "w", () => {
+            void (window as VWindow).__tspVimHook?.save();
+          });
+          vimApi.defineEx("quit", "q", () => {
+            (window as VWindow).__tspVimHook?.quit();
+          });
+          vimApi.defineEx("wq", "wq", () => {
+            void (window as VWindow).__tspVimHook?.writeQuit();
+          });
+          vimApi.defineEx("xit", "x", () => {
+            void (window as VWindow).__tspVimHook?.writeQuit();
+          });
+          vimApi.defineEx("bdelete", "bd", () => {
+            (window as VWindow).__tspVimHook?.quit();
+          });
+          vimApi.map("jj", "<Esc>", "insert");
+          vimApi.map("jk", "<Esc>", "insert");
+        }
         w.__tspVimCommandsRegistered = true;
       }
 

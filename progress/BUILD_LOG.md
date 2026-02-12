@@ -1052,3 +1052,21 @@
   - `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 - Next step:
   - Verify in lesson editor (nvim mode): test `jj`, `:w`, `:q`, `:wq`, and `:bd` on a real file tab.
+
+## Entry — Vercel Build Fix for Vim Typing Error
+- UTC timestamp: 2026-02-12T05:58:36Z
+- What changed:
+  - Fixed Next.js/TypeScript build failure caused by `Property 'Vim' does not exist on type 'typeof CMAdapter'`.
+  - Replaced direct `VimMode.Vim.*` access with runtime-safe `vimApi` cast in lesson editor Vim setup.
+  - Kept same runtime behavior for custom Ex commands and insert mappings.
+- Files created/modified:
+  - `app/components/lesson/code-editor-panel.tsx`
+  - `progress/BUILD_LOG.md`
+  - `progress/HANDOFF.md`
+- Commands run:
+  - `sed -n ... app/components/lesson/code-editor-panel.tsx`
+  - `rg -n "VimMode\\.Vim" app/components/lesson/code-editor-panel.tsx`
+  - file edits via `apply_patch`
+  - `date -u +"%Y-%m-%dT%H:%M:%SZ"`
+- Next step:
+  - Re-run Vercel deploy; verify compile no longer fails on `VimMode.Vim` typing.

@@ -101,6 +101,7 @@
   - `:w`, `:q`, `:wq`, `:x`, `:bd`
   - `jj`/`jk` in insert mode to return to normal mode
   - Ex commands target the currently focused lesson editor instance.
+  - Type-safe runtime access is used for `monaco-vim` custom Ex command API to keep Vercel TS build passing.
 
 ## What Is Unfinished
 - Migration SQL was added but not executed in this environment.
