@@ -362,7 +362,6 @@ export default function IDEPage() {
     (async () => {
       const { Terminal } = await import("@xterm/xterm");
       const { FitAddon } = await import("@xterm/addon-fit");
-      await import("@xterm/xterm/css/xterm.css");
 
       if (cancelled || !termRef.current) return;
 
