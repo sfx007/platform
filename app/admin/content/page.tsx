@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getSessionToken } from "@/app/components/session-guard";
 
@@ -295,7 +295,7 @@ export default function AdminDashboard() {
                   <p className="text-gray-500 text-sm py-2">No lessons yet</p>
                 ) : (
                   <div className="space-y-1">
-                    {part.lessons.map((lesson, i) => (
+                    {part.lessons.map((lesson) => (
                       <div key={lesson.id} className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-gray-700/30">
                         <span className="text-gray-500 text-sm w-6 text-right">{lesson.order}.</span>
                         <span className="flex-1 text-gray-300 text-sm truncate">{lesson.title}</span>

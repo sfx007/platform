@@ -15,7 +15,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ par
   const user = await requireAdmin(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const { partId } = await params;
+  await params;
   const body = await req.json();
   const { lessonIds } = body; // ordered array of lesson IDs
 

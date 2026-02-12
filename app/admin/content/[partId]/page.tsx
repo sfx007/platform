@@ -111,6 +111,7 @@ export default function PartEditorPage({ params }: { params: Promise<{ partId: s
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchPart(); }, [partId]);
 
   const showSuccess = (msg: string) => {

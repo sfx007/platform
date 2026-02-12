@@ -167,7 +167,7 @@ export default function TopHeader({
       return pathname.startsWith(prefix);
     });
     return item?.href ?? "";
-  }, [pathname]);
+  }, [pathname, NAV_ITEMS]);
 
   function onSearchSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
