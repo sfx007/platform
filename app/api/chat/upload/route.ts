@@ -10,7 +10,8 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 /**
  * POST /api/chat/upload — Upload an image for chat.
- * Returns { url: "/chat-uploads/filename.ext" }
+ * Tries filesystem first (works locally), falls back to base64 data URL (works on Vercel).
+ * Returns { url: string }
  */
 export async function POST(req: Request) {
   const url = new URL(req.url);
@@ -39,15 +40,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const safeName = `${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
-
-    await mkdir(UPLOAD_DIR, { recursive: true });
-
     const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(path.join(UPLOAD_DIR, safeName), buffer);
 
-    return NextResponse.json({ url: `/chat-uploads/${safeName}` });
+    // Try filesystem first (works in local dev)
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const safeName = `${Date.now()}-${randomUUID().slice(0, 8)}.${ext}`;
+      await mkdir(UPLOAD_DIR, { recursive: true });
+      await writeFile(path.join(UPLOAD_DIR, safeName), buffer);
+      return NextResponse.json({ url: `/chat-uploads/${safeName}` });
+    } catch {
+      // Filesystem write failed (read-only on Vercel) — use base64 data URL
+      const base64 = buffer.toString("base64");
+      const dataUrl = `data:${file.type};base64,${base64}`;
+      return NextResponse.json({ url: dataUrl });
+    }
   } catch (error) {
     console.error("Chat upload error:", error);
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });

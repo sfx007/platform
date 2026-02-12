@@ -101,6 +101,7 @@ function isOnline(lastActive: string) {
 }
 
 function isImageUrl(url: string) {
+  if (/^data:image\//i.test(url)) return true;
   return /\.(jpe?g|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url);
 }
 
