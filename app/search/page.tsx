@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { ADMIN_USERNAMES } from "@/lib/auth";
 
 function firstParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? "";
@@ -42,6 +43,7 @@ export default async function SearchPage({
               { displayName: { contains: q } },
             ],
             passwordHash: { not: "" },
+            username: { notIn: ADMIN_USERNAMES },
           },
           select: {
             id: true,

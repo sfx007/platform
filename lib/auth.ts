@@ -12,6 +12,9 @@ export const SESSION_COOKIE_NAME = SESSION_COOKIE;
 export const SESSION_EMBED_COOKIE_NAME = SESSION_COOKIE_EMBED;
 export const SESSION_MAX_AGE_SECONDS = SESSION_MAX_AGE / 1000;
 
+/** Admin usernames hidden from public views (leaderboard, community, search) */
+export const ADMIN_USERNAMES = ["obajali", "admin"];
+
 // ── Password helpers ──────────────────────────────────────────────
 export async function hashPassword(password: string): Promise<string> {
   return hash(password, 12);

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser, getUserBySessionToken } from "@/lib/auth";
+import { getCurrentUser, getUserBySessionToken, ADMIN_USERNAMES } from "@/lib/auth";
 
 /**
  * GET /api/dm/users?q=<search> — Search users to start a DM.
@@ -16,16 +16,19 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const where = {
-    id: { not: user.id },
-    passwordHash: { not: "" }, // only real users
-    ...(q
-      ? {
-          OR: [
-            { username: { contains: q, mode: "insensitive" as const } },
-            { displayName: { contains: q, mode: "insensitive" as const } },
-          ],
-        }
-      : {}),
+    AND: [
+      { id: { not: user.id } },
+      { passwordHash: { not: "" } },
+      { username: { notIn: ADMIN_USERNAMES } },
+      ...(q
+        ? [{
+            OR: [
+              { username: { contains: q, mode: "insensitive" as const } },
+              { displayName: { contains: q, mode: "insensitive" as const } },
+            ],
+          }]
+        : []),
+    ],
   };
 
   const users = await prisma.user.findMany({

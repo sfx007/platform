@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getCurrentUser, getUserBySessionToken } from "@/lib/auth";
+import { getCurrentUser, getUserBySessionToken, ADMIN_USERNAMES } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -13,6 +13,7 @@ export async function GET(req: Request) {
     const users = await prisma.user.findMany({
       where: {
         passwordHash: { not: "" },
+        username: { notIn: ADMIN_USERNAMES },
       },
       select: {
         id: true,

@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Avatar from "@/app/components/avatar";
 import { prisma } from "@/lib/db";
-import { getRankName } from "@/lib/auth";
+import { getRankName, ADMIN_USERNAMES } from "@/lib/auth";
 
 export default async function LeaderboardPage() {
   const users = await prisma.user.findMany({
     where: {
       xp: { gt: 0 },
+      username: { notIn: ADMIN_USERNAMES },
     },
     select: {
       id: true,

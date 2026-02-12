@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { ADMIN_USERNAMES } from "@/lib/auth";
 
 export default async function CommunityPage() {
   const [topUsers, totalUsers] = await Promise.all([
     prisma.user.findMany({
-      where: { passwordHash: { not: "" } },
+      where: { passwordHash: { not: "" }, username: { notIn: ADMIN_USERNAMES } },
       select: {
         id: true,
         username: true,
@@ -15,7 +16,7 @@ export default async function CommunityPage() {
       orderBy: { xp: "desc" },
       take: 8,
     }),
-    prisma.user.count({ where: { passwordHash: { not: "" } } }),
+    prisma.user.count({ where: { passwordHash: { not: "" }, username: { notIn: ADMIN_USERNAMES } } }),
   ]);
 
   return (
