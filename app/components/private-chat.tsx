@@ -123,6 +123,7 @@ export default function PrivateChatPage() {
   const [searching, setSearching] = useState(false);
   const [showNewChat, setShowNewChat] = useState(false);
   const [autoOpenHandled, setAutoOpenHandled] = useState(false);
+  const [tappedMsgId, setTappedMsgId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -554,7 +555,7 @@ export default function PrivateChatPage() {
                         )}
                         <div className={`relative max-w-[75%] rounded-xl px-3 py-2 ${
                           isMe ? "bg-blue-500/15 border border-blue-500/20 rounded-tr-sm" : "bg-gray-800/80 border border-gray-700/50 rounded-tl-sm"
-                        }`}>
+                        }`} onClick={() => setTappedMsgId(tappedMsgId === msg.id ? null : msg.id)}>
                           {renderContent(msg)}
                           <div className={`flex items-center gap-1.5 mt-1 ${isMe ? "justify-end" : "justify-start"}`}>
                             <span className="text-[9px] text-gray-600" title={new Date(msg.createdAt).toLocaleString()}>{formatTime(msg.createdAt)}</span>
@@ -565,10 +566,10 @@ export default function PrivateChatPage() {
                               </span>
                             )}
                             {!msg.deleted && (
-                              <button onClick={() => { setReplyTo(msg); inputRef.current?.focus(); }} className="text-[10px] text-gray-600 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all" title="Reply">↩</button>
+                              <button onClick={(e) => { e.stopPropagation(); setReplyTo(msg); inputRef.current?.focus(); setTappedMsgId(null); }} className={`text-[10px] text-gray-600 hover:text-blue-400 transition-all ${tappedMsgId === msg.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} title="Reply">↩</button>
                             )}
                             {isMe && !msg.deleted && (
-                              <button onClick={() => handleDelete(msg.id)} className="text-[10px] text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all" title="Delete">🗑</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); setTappedMsgId(null); }} className={`text-[10px] text-gray-600 hover:text-red-400 transition-all ${tappedMsgId === msg.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} title="Delete">🗑</button>
                             )}
                           </div>
                         </div>

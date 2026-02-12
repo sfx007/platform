@@ -82,6 +82,7 @@ export default function GeneralChat() {
   const [replyTo, setReplyTo] = useState<ChatMsg | null>(null);
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [tappedMsgId, setTappedMsgId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -381,11 +382,12 @@ export default function GeneralChat() {
                         ? "bg-yellow-500/15 border border-yellow-500/20 rounded-tr-sm"
                         : "bg-gray-800/80 border border-gray-700/50 rounded-tl-sm"
                     }`}
+                    onClick={() => setTappedMsgId(tappedMsgId === msg.id ? null : msg.id)}
                   >
                     {/* Username + level (others) */}
                     {!isMe && (
                       <div className="flex items-baseline gap-1.5 mb-0.5">
-                        <Link href={`/profile/${msg.user.username}`} className="text-[11px] font-semibold text-green-400 hover:underline">
+                        <Link href={`/profile/${msg.user.username}`} className="text-[11px] font-semibold text-green-400 hover:underline" onClick={(e) => e.stopPropagation()}>
                           {msg.user.displayName || msg.user.username}
                         </Link>
                         <span className="text-[9px] text-gray-600">Lv{msg.user.level}</span>
@@ -404,8 +406,8 @@ export default function GeneralChat() {
                       {/* Reply button */}
                       {!msg.deleted && (
                         <button
-                          onClick={() => { setReplyTo(msg); inputRef.current?.focus(); }}
-                          className="text-[10px] text-gray-600 hover:text-yellow-400 opacity-0 group-hover:opacity-100 transition-all"
+                          onClick={(e) => { e.stopPropagation(); setReplyTo(msg); inputRef.current?.focus(); setTappedMsgId(null); }}
+                          className={`text-[10px] text-gray-600 hover:text-yellow-400 transition-all ${tappedMsgId === msg.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                           title="Reply"
                         >
                           ↩
@@ -415,8 +417,8 @@ export default function GeneralChat() {
                       {/* Delete button (own messages only) */}
                       {isMe && !msg.deleted && (
                         <button
-                          onClick={() => handleDelete(msg.id)}
-                          className="text-[10px] text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                          onClick={(e) => { e.stopPropagation(); handleDelete(msg.id); setTappedMsgId(null); }}
+                          className={`text-[10px] text-gray-600 hover:text-red-400 transition-all ${tappedMsgId === msg.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
                           title="Delete"
                         >
                           🗑
