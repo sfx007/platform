@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser, getUserBySessionToken } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications";
 
 const MESSAGE_SELECT = {
   id: true,
@@ -106,6 +107,25 @@ export async function POST(req: Request) {
     },
     select: MESSAGE_SELECT,
   });
+
+  // Notify the original author when someone replies to their message
+  if (replyToId) {
+    const parent = await prisma.chatMessage.findUnique({
+      where: { id: replyToId },
+      select: { userId: true },
+    });
+    if (parent && parent.userId !== user.id) {
+      const senderName = user.displayName || user.username;
+      const preview = message.length > 50 ? message.slice(0, 50) + "…" : message;
+      await createNotification(
+        parent.userId,
+        "chat_reply",
+        `↩️ ${senderName} replied to you`,
+        preview || "📷 Photo",
+        "/"
+      );
+    }
+  }
 
   return NextResponse.json({ message: sanitizeMessage(chatMsg) });
 }

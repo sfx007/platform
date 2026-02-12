@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import Avatar from "@/app/components/avatar";
+import { getSessionToken } from "@/app/components/session-guard";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import LogoutButton from "@/app/components/logout-button";
 
 interface TopHeaderProps {
@@ -31,7 +32,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Flashcards", href: "/flashcards", matchPrefix: "/flashcards" },
   { label: "Training", href: "/training", matchPrefix: "/training" },
   { label: "Reviews", href: "/reviews", matchPrefix: "/reviews" },
-  { label: "Notifications", href: "/notifications", matchPrefix: "/notifications" },
   { label: "Messages", href: "/messages", matchPrefix: "/messages" },
   { label: "Community", href: "/community", matchPrefix: "/community" },
   { label: "Leaderboard", href: "/leaderboard", matchPrefix: "/leaderboard" },
@@ -52,6 +52,86 @@ export default function TopHeader({
   const [search, setSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<{ id: string; type: string; title: string; body: string; link: string | null; readAt: string | null; createdAt: string }[]>([]);
+  const [notifCount, setNotifCount] = useState(unreadNotifications);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  function apiUrl(path: string) {
+    const token = getSessionToken();
+    return token ? `${path}?t=${encodeURIComponent(token)}` : path;
+  }
+
+  const fetchNotifs = useCallback(async () => {
+    try {
+      const res = await fetch(apiUrl("/api/notifications"), { credentials: "include" });
+      if (res.ok) {
+        const json = await res.json();
+        setNotifications(json.notifications || []);
+        setNotifCount((json.notifications || []).filter((n: { readAt: string | null }) => !n.readAt).length);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Close panel on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+    }
+    if (notifOpen) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [notifOpen]);
+
+  // Fetch when panel opens
+  useEffect(() => { if (notifOpen) fetchNotifs(); }, [notifOpen, fetchNotifs]);
+
+  // Poll unread count
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(apiUrl("/api/notifications/unread"), { credentials: "include" });
+        if (res.ok) { const j = await res.json(); setNotifCount(j.count); }
+      } catch { /* ignore */ }
+    }, 15_000);
+    return () => clearInterval(poll);
+  }, [isLoggedIn]);
+
+  async function markAllRead() {
+    await fetch(apiUrl("/api/notifications"), { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: "{}" }).catch(() => {});
+    setNotifications(prev => prev.map(n => ({ ...n, readAt: n.readAt || new Date().toISOString() })));
+    setNotifCount(0);
+  }
+
+  async function deleteNotif(id: string) {
+    await fetch(apiUrl("/api/notifications"), { method: "DELETE", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }).catch(() => {});
+    setNotifications(prev => { const next = prev.filter(n => n.id !== id); setNotifCount(next.filter(n => !n.readAt).length); return next; });
+  }
+
+  function typeIcon(type: string) {
+    switch (type) {
+      case "level_up": return "🎉";
+      case "achievement": return "🏆";
+      case "streak": return "🔥";
+      case "lesson_complete": return "✅";
+      case "quest_complete": return "⚔️";
+      case "review_due": return "📝";
+      case "new_message": return "💬";
+      case "chat_reply": return "↩️";
+      case "system": return "📢";
+      default: return "🔔";
+    }
+  }
+
+  function timeAgo(iso: string) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "now";
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
+  }
 
   const xpPerLevel = 500;
   const xpInLevel = xp % xpPerLevel;
@@ -192,19 +272,76 @@ export default function TopHeader({
 
           {isLoggedIn ? (
             <>
-              <Link
-                href="/notifications"
-                className="relative h-10 w-10 sm:h-8 sm:w-8 rounded-full bg-gray-900 border border-gray-700 hover:border-yellow-500/70 transition-colors flex items-center justify-center"
-                title="Notifications"
-                suppressHydrationWarning
-              >
-                <Image src="/img/notification-silver.png" alt="Notifications" width={16} height={16} className="h-4 w-4" suppressHydrationWarning />
-                {unreadNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-red-500 text-[10px] leading-4 text-white px-1 text-center font-bold">
-                    {Math.min(unreadNotifications, 99)}
-                  </span>
+              <div ref={notifRef} className="relative">
+                <button
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative h-10 w-10 sm:h-8 sm:w-8 rounded-full bg-gray-900 border border-gray-700 hover:border-yellow-500/70 transition-colors flex items-center justify-center"
+                  title="Notifications"
+                  suppressHydrationWarning
+                >
+                  <Image src="/img/notification-silver.png" alt="Notifications" width={16} height={16} className="h-4 w-4" suppressHydrationWarning />
+                  {notifCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-red-500 text-[10px] leading-4 text-white px-1 text-center font-bold">
+                      {Math.min(notifCount, 99)}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification dropdown panel */}
+                {notifOpen && (
+                  <div className="absolute right-0 top-[calc(100%+6px)] w-[320px] sm:w-[360px] max-h-[420px] bg-gray-900 border border-gray-700 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden animate-float-up">
+                    {/* Panel header */}
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-700">
+                      <span className="text-sm font-bold text-gray-100">Notifications</span>
+                      {notifCount > 0 && (
+                        <button onClick={markAllRead} className="text-[10px] text-yellow-500 hover:text-yellow-400 transition-colors">
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Notification list */}
+                    <div className="flex-1 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="py-10 text-center">
+                          <p className="text-xl mb-1">🔔</p>
+                          <p className="text-xs text-gray-500">No notifications yet</p>
+                        </div>
+                      ) : (
+                        notifications.slice(0, 30).map(n => (
+                          <div
+                            key={n.id}
+                            className={`flex items-start gap-2.5 px-3 py-2.5 border-b border-gray-800/50 hover:bg-gray-800/50 transition-colors cursor-pointer ${
+                              !n.readAt ? "bg-yellow-500/5" : ""
+                            }`}
+                            onClick={() => {
+                              if (n.link) { router.push(n.link); setNotifOpen(false); }
+                            }}
+                          >
+                            <span className="text-base mt-0.5 shrink-0">{typeIcon(n.type)}</span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-1">
+                                <p className={`text-xs font-semibold truncate ${!n.readAt ? "text-gray-100" : "text-gray-400"}`}>
+                                  {n.title}
+                                </p>
+                                <span className="text-[9px] text-gray-600 shrink-0">{timeAgo(n.createdAt)}</span>
+                              </div>
+                              <p className="text-[11px] text-gray-500 truncate">{n.body}</p>
+                            </div>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); deleteNotif(n.id); }}
+                              className="text-[10px] text-gray-600 hover:text-red-400 transition-colors mt-1 shrink-0"
+                              title="Delete"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 )}
-              </Link>
+              </div>
 
               <Link
                 href="/messages"
