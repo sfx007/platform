@@ -13,7 +13,7 @@ interface TopHeaderProps {
   profileImage: string;
   level: number;
   xp: number;
-  dueReviews: number;
+  unreadNotifications: number;
   communityCount: number;
   unreadDMs: number;
 }
@@ -31,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Flashcards", href: "/flashcards", matchPrefix: "/flashcards" },
   { label: "Training", href: "/training", matchPrefix: "/training" },
   { label: "Reviews", href: "/reviews", matchPrefix: "/reviews" },
+  { label: "Notifications", href: "/notifications", matchPrefix: "/notifications" },
   { label: "Messages", href: "/messages", matchPrefix: "/messages" },
   { label: "Community", href: "/community", matchPrefix: "/community" },
   { label: "Leaderboard", href: "/leaderboard", matchPrefix: "/leaderboard" },
@@ -42,7 +43,7 @@ export default function TopHeader({
   profileImage,
   level,
   xp,
-  dueReviews,
+  unreadNotifications,
   communityCount,
   unreadDMs,
 }: TopHeaderProps) {
@@ -192,15 +193,15 @@ export default function TopHeader({
           {isLoggedIn ? (
             <>
               <Link
-                href="/reviews"
+                href="/notifications"
                 className="relative h-10 w-10 sm:h-8 sm:w-8 rounded-full bg-gray-900 border border-gray-700 hover:border-yellow-500/70 transition-colors flex items-center justify-center"
-                title="Reviews"
+                title="Notifications"
                 suppressHydrationWarning
               >
-                <Image src="/img/notification-silver.png" alt="Reviews" width={16} height={16} className="h-4 w-4" suppressHydrationWarning />
-                {dueReviews > 0 && (
+                <Image src="/img/notification-silver.png" alt="Notifications" width={16} height={16} className="h-4 w-4" suppressHydrationWarning />
+                {unreadNotifications > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-red-500 text-[10px] leading-4 text-white px-1 text-center font-bold">
-                    {Math.min(dueReviews, 99)}
+                    {Math.min(unreadNotifications, 99)}
                   </span>
                 )}
               </Link>

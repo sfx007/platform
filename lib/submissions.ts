@@ -4,6 +4,7 @@ import { validateProof } from "@/lib/validate-proof";
 import { logProgressEvent } from "@/lib/progress-events";
 import { syncProgressToGitHub } from "@/lib/github-sync";
 import { recordLessonSkillEvidence, recordQuestSkillEvidence } from "@/lib/skill-evidence";
+import { notify } from "@/lib/notifications";
 import {
   buildTutorMessage,
   callAITutor,
@@ -139,6 +140,7 @@ async function awardXP(userId: string, amount: number) {
       where: { id: userId },
       data: { level: computedLevel },
     });
+    await notify.levelUp(userId, computedLevel);
   }
 }
 

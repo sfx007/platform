@@ -45,6 +45,7 @@ model User {
   conversationsA Conversation[]   @relation("ConvUserA")
   conversationsB Conversation[]   @relation("ConvUserB")
   directMessages DirectMessage[]
+  notifications  Notification[]
 }
 
 model Session {
@@ -469,4 +470,22 @@ model ProgressEvent {
 
   @@index([userId, createdAt])
   @@index([type, createdAt])
+}
+
+// ── Notifications ────────────────────────────────────────────
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String    // level_up | achievement | streak | review_due | new_message | lesson_complete | quest_complete | system
+  title     String
+  body      String
+  link      String?   // optional link to navigate to
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
 }

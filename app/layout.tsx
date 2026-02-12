@@ -34,7 +34,7 @@ export default async function RootLayout({
   const displayName = user?.displayName || user?.username || "Learner";
   const profileImage = user?.profileImage || "/img/new_boots_profile.webp";
 
-  let dueReviews = 0;
+  let unreadNotifications = 0;
   let communityCount = 0;
   let unreadDMs = 0;
 
@@ -47,12 +47,11 @@ export default async function RootLayout({
       });
       const convIds = userConvs.map((c) => c.id);
 
-      [dueReviews, communityCount, unreadDMs] = await Promise.all([
-        prisma.reviewItem.count({
+      [unreadNotifications, communityCount, unreadDMs] = await Promise.all([
+        prisma.notification.count({
           where: {
             userId: user.id,
-            completedAt: null,
-            dueAt: { lte: new Date() },
+            readAt: null,
           },
         }),
         prisma.user.count({
@@ -89,7 +88,7 @@ export default async function RootLayout({
           profileImage={profileImage}
           level={level}
           xp={xp}
-          dueReviews={dueReviews}
+          unreadNotifications={unreadNotifications}
           communityCount={communityCount}
           unreadDMs={unreadDMs}
         />

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser, getUserBySessionToken } from "@/lib/auth";
+import { notify } from "@/lib/notifications";
 
 const DM_SELECT = {
   id: true,
@@ -145,6 +146,11 @@ export async function POST(
       data: { lastActiveAt: new Date() },
     }),
   ]);
+
+  // Notify the other user
+  const recipientId = conv.userAId === user.id ? conv.userBId : conv.userAId;
+  const senderName = user.displayName || user.username;
+  await notify.newMessage(recipientId, senderName);
 
   return NextResponse.json({ message: sanitizeDM(dm) });
 }
