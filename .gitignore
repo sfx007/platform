@@ -12,3 +12,6 @@ node_modules/
 # Prisma local DB
 *.db
 *.db-journal
+
+# Local uploads
+public/uploads/

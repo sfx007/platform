@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { getPartProgress, hasPassedLesson } from "@/lib/progress";
+import { getPartProgress } from "@/lib/progress";
 import { getPartSupplementalContent } from "@/lib/part-content";
 import { inferLessonKindFromRecord, type ContentKind } from "@/lib/content-kind";
 
@@ -69,6 +69,11 @@ export default async function PartPage({ params }: { params: Promise<{ partSlug:
   const completedFromSubmissions = passedLessonRows.filter(
     (row) => !!row.lessonId && coreLessonIdSet.has(row.lessonId)
   ).length;
+  const passedLessonIdSet = new Set(
+    passedLessonRows
+      .map((row) => row.lessonId)
+      .filter((id): id is string => Boolean(id))
+  );
   const completedCount = Math.max(completedFromProgress, completedFromSubmissions);
   const questDone = (partProgress?.questCompleted ?? false) || !!questPass;
   const totalLessons = coreLessons.length;
@@ -155,8 +160,8 @@ export default async function PartPage({ params }: { params: Promise<{ partSlug:
       </div>
 
       <div className="flex flex-col gap-2.5 mb-8">
-        {coreLessons.map(async (lesson) => {
-          const passed = await hasPassedLesson(lesson.id);
+        {coreLessons.map((lesson) => {
+          const passed = passedLessonIdSet.has(lesson.id);
           return (
             <Link
               key={lesson.id}

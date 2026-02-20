@@ -83,6 +83,9 @@
     - `app/parts/[partSlug]/quiz/page.tsx`
   - Lesson navigation now excludes training rows and blocks direct access to training entries from lesson route (`notFound` on non-lesson kinds).
   - `app/parts/page.tsx` lesson counts/progress now exclude training items.
+- Part detail page render path is now synchronous:
+  - removed async JSX map in `app/parts/[partSlug]/page.tsx` to avoid server render Promise-child exceptions.
+  - pass/completion badges are computed via preloaded submission ID sets.
 - Content ingestion now captures and uses frontmatter `kind`:
   - `lib/schemas.ts` normalizes `kind` (`intro|lesson|training|boss|quiz`).
   - `lib/content-loader.ts` carries parsed lesson/quest kind.
@@ -95,8 +98,8 @@
   - File tree/editor open/save works on local files without routing through `/api/fs/read`/`write`.
   - `Server Folder` button switches back to existing server workspace flow.
   - Terminal now remains available in local mode via workspace sync.
-  - In local mode, `🧪 Testing` auto-syncs local files into server workspace mirror, then runs `make test`.
-  - Local mode also has manual `⇅ Sync` button for arbitrary terminal command workflows.
+- In local mode, `🧪 Testing` auto-syncs local files into server workspace mirror, then runs `make test`.
+- Local mode also has manual `⇅ Sync` button for arbitrary terminal command workflows.
 - Lesson editor `nvim` mode now includes Vim-style command behavior:
   - `:w`, `:q`, `:wq`, `:x`, `:bd`
   - `jj`/`jk` in insert mode to return to normal mode
@@ -131,3 +134,4 @@
 - `make test` depends on system tools (`make`, `bash`, `cmake`, `c++`, `python3`) being available in runtime environment for `/api/fs/exec`.
 - Local-folder mode requires Chromium-based browser with File System Access API and a secure context (`localhost`/HTTPS).
 - In local mode, terminal executes in server workspace; local files must be synced first (`🧪 Testing` does this automatically, `⇅ Sync` does it manually).
+- Profile image upload now writes to `public/uploads` when possible and falls back to a data URL on serverless read-only filesystems (Vercel).

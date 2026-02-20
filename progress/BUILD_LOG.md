@@ -1070,3 +1070,38 @@
   - `date -u +"%Y-%m-%dT%H:%M:%SZ"`
 - Next step:
   - Re-run Vercel deploy; verify compile no longer fails on `VimMode.Vim` typing.
+
+## Entry — Production Crash Fix (Part Page Async Render)
+- UTC timestamp: 2026-02-17T14:43:30Z
+- What changed:
+  - Fixed server-render crash path in Part page by removing async JSX mapping (`coreLessons.map(async ...)`).
+  - Replaced per-row `hasPassedLesson` calls with a precomputed `passedLessonIdSet` from already-fetched submission rows.
+  - Rendering is now synchronous and deterministic on the server.
+- Files created/modified:
+  - `app/parts/[partSlug]/page.tsx`
+  - `progress/BUILD_LOG.md`
+  - `progress/HANDOFF.md`
+- Commands run:
+  - `rg -n "map\\(async|hasPassedLesson\\(" app -S`
+  - `sed -n ... app/parts/[partSlug]/page.tsx`
+  - file edit via `apply_patch`
+  - `date -u +"%Y-%m-%dT%H:%M:%SZ"`
+- Next step:
+  - Redeploy and verify `/parts/[partSlug]` loads without runtime digest error.
+
+## Entry — Profile Upload Serverless Fix
+- UTC timestamp: 2026-02-20T22:04:58Z
+- What changed:
+  - Updated upload storage to write into `public/uploads` when possible.
+  - Added fallback to data URL when filesystem writes fail (e.g., Vercel read-only).
+  - Ignored `public/uploads/` in git.
+- Files created/modified:
+  - `lib/uploads.ts`
+  - `.gitignore`
+  - `progress/BUILD_LOG.md`
+- Commands run:
+  - `sed -n ... lib/uploads.ts`
+  - file edits via `apply_patch`
+  - `date -u +"%Y-%m-%dT%H:%M:%SZ"`
+- Next step:
+  - Redeploy and test profile image upload in production (should return data URL if filesystem is read-only).
